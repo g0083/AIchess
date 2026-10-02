@@ -1,0 +1,370 @@
+/* =========================================================================
+   Board chrome. The squares and pieces are drawn by chessground; this file
+   supplies the wooden ground, the coordinate styling, the highlight colours
+   and the responsive frame that keeps the board inside its container.
+   ========================================================================= */
+
+.board-slot {
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+
+.board-inner {
+  position: relative;
+  border-radius: 6px;
+  box-shadow: var(--shadow-board);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* Procedural wood grain, multiplied over the squares. */
+.board-inner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px rgba(60, 40, 20, 0.35);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='w'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.004 0.09' numOctaves='4' seed='7'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23w)' opacity='0.13'/%3E%3C/svg%3E");
+  mix-blend-mode: multiply;
+}
+
+/* Soft vignette so the board reads as a physical object, not a flat grid. */
+.board-inner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  border-radius: 6px;
+  background: radial-gradient(
+    120% 120% at 50% 0%,
+    rgba(255, 255, 255, 0.14),
+    transparent 45%,
+    rgba(40, 26, 12, 0.16) 100%
+  );
+}
+
+.board-inner .cg-wrap {
+  position: relative;
+  z-index: 1;
+}
+
+/* --- squares ------------------------------------------------------------ */
+.board-inner cg-board {
+  background-color: transparent;
+}
+
+.board-inner square.last-move {
+  background-color: var(--sq-light-sel);
+}
+.board-inner square.move-dest {
+  background: radial-gradient(circle at center, var(--sq-move) 0 26%, transparent 27%);
+}
+.board-inner square.oc.move-dest {
+  background: none;
+}
+.board-inner square.selected {
+  background-color: color-mix(in srgb, var(--brass) 45%, transparent);
+}
+.board-inner square.check {
+  background: radial-gradient(circle at center, var(--sq-check) 0 30%, transparent 32%);
+}
+
+/* --- pieces ------------------------------------------------------------- */
+.board-inner .cg-wrap piece {
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35)) drop-shadow(0 2px 2px rgba(0, 0, 0, 0.18));
+}
+.board-inner .cg-wrap piece.dragging {
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45));
+  z-index: 11 !important;
+}
+.board-inner .cg-wrap piece.anim {
+  z-index: 8;
+}
+.board-inner .cg-wrap piece.fading {
+  z-index: 1;
+  opacity: 0.5;
+}
+.board-inner .cg-wrap piece.ghost {
+  opacity: 0.32;
+}
+
+/* --- coordinates -------------------------------------------------------- */
+.board-inner coords {
+  font-family: var(--font-num);
+  font-size: 10px;
+  font-weight: 600;
+  opacity: 1;
+}
+.board-inner coords.ranks {
+  left: 3px;
+  top: 0;
+}
+.board-inner coords.ranks coord {
+  transform: translateY(41%);
+  color: var(--coord-light);
+}
+.board-inner coords.files {
+  bottom: 1px;
+  left: 0;
+  width: 100%;
+  height: 14px;
+}
+.board-inner coords.files coord {
+  color: var(--coord-dark);
+  mix-blend-mode: difference;
+  opacity: 0.9;
+}
+
+/* --- arrows and shapes -------------------------------------------------- */
+.board-inner .cg-shapes {
+  opacity: 0.8;
+}
+.board-inner .cg-shapes > line {
+  stroke: var(--brass-deep);
+
+/* =========================================================================
+   Game layout. Desktop is three columns, tablet two, phone stacked with a
+   bottom tab bar. Only the board area is allowed to grow; panels scroll
+   independently so the page itself never scrolls on a phone.
+   ========================================================================= */
+
+.game-shell {
+  display: grid;
+  gap: var(--sp-3);
+  align-content: start;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: var(--sp-2);
+  padding-bottom: var(--safe-b);
+}
+
+.game-shell__board {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+}
+
+.game-shell__side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  min-height: 0;
+  min-width: 0;
+}
+
+/* --- player cards -------------------------------------------------------- */
+.player-card {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  min-width: 0;
+}
+.player-card--active {
+  border-color: var(--brass);
+  box-shadow: 0 0 0 1px var(--brass) inset;
+}
+
+.avatar {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--ink-soft);
+  box-shadow: var(--shadow-1);
+}
+.avatar--white {
+  background: linear-gradient(160deg, #8a7a5e, #5d5040);
+}
+.avatar--black {
+  background: linear-gradient(160deg, #3b342b, #191510);
+}
+.avatar--dark {
+  background: linear-gradient(160deg, var(--brass), var(--brass-deep));
+}
+
+.player-card__body {
+  min-width: 0;
+  flex: 1;
+}
+.player-card__name {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.player-card__sub {
+  font-size: var(--fs-xs);
+  color: var(--ink-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.clock {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+.clock__time {
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--fs-lg);
+  line-height: 1.1;
+  letter-spacing: 0;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--paper-sunken);
+  min-width: 88px;
+  text-align: right;
+}
+.clock--active .clock__time {
+  background: var(--ink);
+  color: var(--paper);
+}
+.clock--low .clock__time {
+  background: var(--oxblood);
+  color: #fff;
+}
+.clock__meta {
+  font-size: var(--fs-xs);
+  color: var(--ink-faint);
+}
+.clock__save {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--oxblood);
+}
+
+/* --- move list ----------------------------------------------------------- */
+.movelist {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-size: var(--fs-sm);
+  min-height: 0;
+  overflow-y: auto;
+}
+.movelist__row {
+  display: grid;
+  grid-template-columns: 42px 1fr 1fr;
+  gap: var(--sp-1);
+  align-items: center;
+}
+.movelist__num {
+  color: var(--ink-faint);
+  font-family: var(--font-num);
+  font-size: var(--fs-xs);
+  text-align: right;
+  padding-right: var(--sp-2);
+}
+.movelist__move {
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+  text-align: left;
+  font-family: var(--font-num);
+  letter-spacing: 0.01em;
+  min-height: 30px;
+  white-space: nowrap;
+}
+.movelist__move:hover {
+  background: var(--paper-sunken);
+}
+.movelist__move[aria-current='true'] {
+  background: var(--brass);
+  color: #fff;
+}
+.movelist__move--empty {
+  cursor: default;
+}
+
+/* Mistake markers, drawn as a small leading dot. */
+.movelist__move[data-grade='mistake']::before,
+.movelist__move[data-grade='blunder']::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: middle;
+}
+.movelist__move[data-grade='mistake']::before {
+  background: var(--warn);
+}
+.movelist__move[data-grade='blunder']::before {
+  background: var(--danger);
+}
+.movelist__move[data-grade='best']::before,
+.movelist__move[data-grade='good']::before,
+.movelist__move[data-grade='inaccuracy']::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: middle;
+  background: var(--ok);
+}
+.movelist__move[data-grade='inaccuracy']::before {
+  background: var(--info);
+}
+
+/* --- evaluation bar ------------------------------------------------------ */
+.evalbar {
+  position: relative;
+  width: 14px;
+  border-radius: 7px;
+  overflow: hidden;
+  background: #3a352d;
+  box-shadow: inset 0 0 0 1px var(--rule);
+  flex: none;
+}
+.evalbar__white {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(180deg, #fbf6ea, #ddd2bc);
+  transition: height 220ms var(--ease);
+}
+.evalbar__mid {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: var(--rule-strong);
+}
+
+}
+.board-inner .cg-shapes > circle {
+  fill: var(--brass-deep);
+  opacity: 0.45;
+}
+.board-inner .cg-shapes-below > line {
+  stroke: var(--moss-deep);
+}
+.board-inner .cg-shapes-below > circle {
+  fill: var(--moss-deep);
+}

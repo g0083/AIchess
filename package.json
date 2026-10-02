@@ -1,0 +1,48 @@
+{
+  "name": "shogiya-chess",
+  "version": "1.0.0",
+  "description": "将棋盤のように的对战チェス PWA — オフライン2人・AI・P2P・学習モード",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "npm run engine:copy && vite",
+    "build": "npm run engine:copy && tsc --noEmit && vite build",
+    "preview": "vite preview --host",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "engine:copy": "node scripts/copy-engine.mjs",
+    "icons": "node scripts/gen-icons.mjs",
+    "preview:pieces": "node scripts/preview-pieces.mjs",
+    "verify:content": "node scripts/verify-content.mjs",
+    "verify:puzzles": "node scripts/verify-puzzles.mjs",
+    "verify": "npm run verify:content && npm run verify:puzzles && npm test"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "GPL-3.0",
+  "devDependencies": {
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "esbuild": "^0.28.2",
+    "sharp": "^0.35.5",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.2",
+    "vite-plugin-pwa": "^1.3.0",
+    "vitest": "^5.0.3"
+  },
+  "dependencies": {
+    "@lichess-org/chessground": "^10.1.1",
+    "chess.js": "^1.4.0",
+    "idb-keyval": "^6.3.0",
+    "jsqr": "^1.4.0",
+    "qrcode": "^1.5.4",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-router-dom": "^7.18.4",
+    "stockfish": "^19.0.0",
+    "trystero": "^0.25.4",
+    "zustand": "^5.0.15"
+  }
+}

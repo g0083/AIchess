@@ -1,0 +1,165 @@
+/* =========================================================================
+   Design tokens.
+   Palette: washi paper, sumi ink, brass, moss, oxblood.
+   Japanese typography: system Mincho for display, system Gothic for body.
+   No web fonts are downloaded, so the app renders instantly and works offline.
+   ========================================================================= */
+
+:root {
+  /* --- ground & ink ------------------------------------------------- */
+  --paper: #f4efe6;
+  --paper-raised: #fbf7f0;
+  --paper-sunken: #e8e0d1;
+  --ink: #1f1b16;
+  --ink-soft: #4a4239;
+  --ink-faint: #7a6f61;
+  --rule: #d6cbb8;
+  --rule-strong: #b9ab93;
+
+  /* --- accents ------------------------------------------------------ */
+  --brass: #b08944;
+  --brass-deep: #8a6a33;
+  --brass-soft: #e6d3ac;
+  --moss: #7c8b7a;
+  --moss-deep: #4f5c50;
+  --oxblood: #8c3a2b;
+  --oxblood-soft: #f0ddd8;
+
+  /* --- semantic ----------------------------------------------------- */
+  --ok: var(--moss-deep);
+  --warn: #b5761f;
+  --danger: var(--oxblood);
+  --info: #3f5f76;
+
+  /* --- board -------------------------------------------------------- */
+  --sq-light: #e9dcc2;
+  --sq-dark: #a8794a;
+  --sq-light-sel: #d8c48a;
+  --sq-dark-sel: #b98a4c;
+  --sq-move: rgba(31, 27, 22, 0.22);
+  --sq-check: rgba(200, 60, 45, 0.55);
+  --coord-light: #7d6242;
+  --coord-dark: #e8d6b8;
+
+  --piece-white: #f6f1e6;
+  --piece-white-edge: #2b2620;
+  --piece-white-shade: #cdc3b0;
+  --piece-black: #241f19;
+  --piece-black-edge: #0d0b08;
+  --piece-black-shade: #4d443a;
+  --piece-accent: #b08944;
+
+  /* --- geometry ----------------------------------------------------- */
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+
+  --tap: 44px; /* minimum touch target */
+
+  --shadow-1: 0 1px 2px rgba(31, 27, 22, 0.06), 0 2px 8px rgba(31, 27, 22, 0.05);
+  --shadow-2: 0 2px 6px rgba(31, 27, 22, 0.08), 0 8px 24px rgba(31, 27, 22, 0.09);
+  --shadow-3: 0 4px 12px rgba(31, 27, 22, 0.12), 0 18px 48px rgba(31, 27, 22, 0.14);
+  --shadow-board: 0 2px 4px rgba(31, 27, 22, 0.12), 0 10px 30px rgba(31, 27, 22, 0.16);
+  --shadow-piece: 0 1px 1px rgba(0, 0, 0, 0.28), 0 3px 6px rgba(0, 0, 0, 0.22);
+
+  /* --- type --------------------------------------------------------- */
+  --font-display: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Noto Serif CJK JP",
+    "Noto Serif JP", "Hiragino Mincho Pro", "MS PMincho", "Songti SC", serif;
+  --font-body: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", "YuGothic",
+    "Noto Sans CJK JP", "Noto Sans JP", Meiryo, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-num: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+  --font-mono: "SF Mono", "Cascadia Mono", Consolas, "Roboto Mono", monospace;
+
+  --fs-xs: 0.75rem;
+  --fs-sm: 0.8125rem;
+  --fs-base: 0.9375rem;
+  --fs-md: 1.0625rem;
+  --fs-lg: 1.25rem;
+  --fs-xl: 1.5rem;
+  --fs-2xl: 1.875rem;
+  --fs-3xl: 2.5rem;
+  --fs-clock: clamp(1.75rem, 6vw, 2.75rem);
+
+  --lh-tight: 1.35;
+  --lh-body: 1.9;
+
+  /* --- layout ------------------------------------------------------- */
+  --header-h: 56px;
+  --bottombar-h: 60px;
+  --panel-w: 340px;
+  --player-w: 190px;
+
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --dur: 180ms;
+}
+
+/* --- 墨 (dark) ------------------------------------------------------- */
+[data-theme='ink'] {
+  --paper: #17150f;
+  --paper-raised: #211e17;
+  --paper-sunken: #100e0a;
+  --ink: #f0e9dc;
+  --ink-soft: #c6bcae;
+  --ink-faint: #918a7e;
+  --rule: #353025;
+  --rule-strong: #4b4436;
+
+  --brass: #d3ab63;
+  --brass-deep: #b98f47;
+  --brass-soft: #3b3020;
+  --moss: #8fa08c;
+  --moss-deep: #a8bda4;
+  --oxblood: #cf6b56;
+  --oxblood-soft: #3a241f;
+
+  --sq-light: #cfb489;
+  --sq-dark: #6d5033;
+  --sq-light-sel: #c9a55f;
+  --sq-dark-sel: #8a6335;
+  --sq-move: rgba(255, 250, 235, 0.2);
+  --sq-check: rgba(215, 70, 50, 0.6);
+  --coord-light: #4a3826;
+  --coord-dark: #f0dcb8;
+
+  --piece-white: #f2ece0;
+  --piece-white-edge: #17130d;
+  --piece-white-shade: #a89c88;
+  --piece-black: #1b1712;
+  --piece-black-edge: #000;
+  --piece-black-shade: #4a4137;
+  --piece-accent: #d3ab63;
+
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-2: 0 2px 6px rgba(0, 0, 0, 0.45), 0 8px 24px rgba(0, 0, 0, 0.4);
+  --shadow-3: 0 4px 12px rgba(0, 0, 0, 0.5), 0 18px 48px rgba(0, 0, 0, 0.5);
+  --shadow-board: 0 2px 4px rgba(0, 0, 0, 0.5), 0 10px 30px rgba(0, 0, 0, 0.55);
+  --shadow-piece: 0 1px 1px rgba(0, 0, 0, 0.6), 0 3px 6px rgba(0, 0, 0, 0.5);
+}
+
+/* --- セピア (sepia, deeper than washi) ------------------------------- */
+[data-theme='sepia'] {
+  --paper: #e7d9c0;
+  --paper-raised: #f2e7d3;
+  --paper-sunken: #d8c8a9;
+  --ink: #2a2118;
+  --ink-soft: #554636;
+  --ink-faint: #7d6b56;
+  --rule: #c6b08a;
+  --rule-strong: #a68c63;
+  --brass: #9c7433;
+  --brass-soft: #e0c99a;
+}
