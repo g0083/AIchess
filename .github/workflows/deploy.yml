@@ -45,6 +45,23 @@ jobs:
       - name: Check sub-path hosting
         run: node scripts/serve-subpath.mjs /AIChess 4174
 
+      # configure-pages fails with an opaque "Resource not accessible by
+      # integration" when Pages has never been switched on. Check first and say
+      # exactly what to click.
+      - name: Check that GitHub Pages is enabled
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' \
+            -H 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/pages")
+          if [ "$code" = "404" ]; then
+            echo "::error::GitHub Pages is not enabled for this repository."
+            echo "Enable it once at:"
+            echo "  https://github.com/${GITHUB_REPOSITORY}/settings/pages"
+            echo "then choose Source = GitHub Actions, and re-run this workflow."
+            exit 1
+          fi
+          echo "Pages is enabled."
+
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

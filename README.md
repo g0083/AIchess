@@ -123,11 +123,19 @@ node scripts/serve-subpath.mjs /AIChess 4174
 ### GitHub Pages
 
 `.github/workflows/deploy.yml` が `master` への push で自動デプロイします。
-リポジトリ設定で **Settings → Pages → Source: GitHub Actions** を選んでください。
+
+**初回のみ、手動でひとつだけ設定が必要です。** Pages は一度有効化しないと
+ワークフローが動きません。
+
+1. `https://github.com/g0083/AIchess/settings/pages` を開く
+2. **Build and deployment → Source** を **GitHub Actions** に変更して保存
+
+これだけで `master` への push で自動デプロイされます。
+Pages が未有効の場合、ワークフローは失敗画面に手順の URL を表示します。
 
 - 公開URL: `https://g0083.github.io/AIChess/`
-- 初期化: `git remote add origin https://github.com/g0083/AIChess.git`
 - 反映: `git push -u origin master`
+- 手動で再実行: Actions タブ → Deploy to GitHub Pages → Run workflow
 
 ワークフローの中で `npm run verify` とサブパス検証が走ります。
 壊れたパズルや壊れた日本語が本番に届くことはありません。
