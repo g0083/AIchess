@@ -80,60 +80,137 @@ const DETAIL: Partial<Record<PieceRole, string>> = {
   king: `<g><path d="M12.3 22.4h20.4" fill="none" stroke="var(--piece-detail)" stroke-width="1.1" stroke-linecap="round" opacity=".7"/></g>`,
 };
 
-/** Vertical highlight that gives the pieces their "turned wood" look. */
-const SHEEN = `<path d="M17.4 12.5c-1.1 3.2-1.3 6.6-.6 9.6" fill="none" stroke="var(--piece-sheen)" stroke-width="2" stroke-linecap="round" opacity=".45"/>`;
+/**
+ * Vertical highlight that gives the pieces their "turned wood" look.
+ * @param c stroke colour
+ */
+const sheen = (c: string): string =>
+  `<path d="M17.4 12.5c-1.1 3.2-1.3 6.6-.6 9.6" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round" opacity=".45"/>`;
 
-/** @param role piece role @param color 'white' | 'black' */
-function markup(role: PieceRole, color: 'white' | 'black'): string {
-  const fill = color === 'white' ? 'var(--piece-white)' : 'var(--piece-black)';
-  const edge = color === 'white' ? 'var(--piece-white-edge)' : 'var(--piece-black-edge)';
+function markup(
+  role: PieceRole,
+  color: 'white' | 'black',
+  p: PiecePalette = PALETTES.washi,
+): string {
+  // Literal colours only: see the note on PiecePalette.
+  const fill = color === 'white' ? p.whiteFill : p.blackFill;
+  const edge = color === 'white' ? p.whiteEdge : p.blackEdge;
+  const detail = color === 'white' ? p.whiteDetail : p.blackDetail;
+  const hi = color === 'white' ? p.whiteSheen : p.blackSheen;
+  const detailLines = (DETAIL[role] ?? '').replaceAll('var(--piece-detail)', detail);
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45" width="45" height="45">` +
     `<g fill="${fill}" stroke="${edge}" stroke-width="1.45" stroke-linejoin="round" stroke-linecap="round">` +
     BODIES[role] +
     `</g>` +
-    (DETAIL[role] ?? '') +
-    (role === 'knight' ? '' : SHEEN) +
+    detailLines +
+    (role === 'knight' ? '' : sheen(hi)) +
     `</svg>`
   );
 }
 
 const CACHE = new Map<string, string>();
 
+export interface PiecePalette {
+  /** Body fill for the light men. */
+  whiteFill: string;
+  /** Outline for the light men. */
+  whiteEdge: string;
+  /** Engraved detail lines on the light men. */
+  whiteDetail: string;
+  /** Vertical highlight on the light men. */
+  whiteSheen: string;
+  blackFill: string;
+  blackEdge: string;
+  blackDetail: string;
+  blackSheen: string;
+}
+
 /**
- * A CSS `url("data:image/svg+xml,...")` value for a piece.
- * Chessground paints pieces with background-image, which is why we hand back a
- * data URI rather than inline markup.
+ * Palettes per app theme.
+ *
+ * The colours MUST be literal. An SVG used as a CSS background-image is
+ * rendered in an isolated document and cannot see the page's CSS custom
+ * properties, so `fill="var(--piece-white)"` resolves to nothing and the men
+ * come out unpainted.
  */
-export function pieceImage(role: PieceRole, color: 'white' | 'black'): string {
-  const key = `${role}-${color}`;
+export const PALETTES: Record<string, PiecePalette> = {
+  washi: {
+    whiteFill: '#f6f1e6',
+    whiteEdge: '#2b2620',
+    whiteDetail: '#8b8071',
+    whiteSheen: '#ffffff',
+    blackFill: '#241f19',
+    blackEdge: '#050403',
+    blackDetail: '#6a5f52',
+    blackSheen: '#9c8f7c',
+  },
+  sepia: {
+    whiteFill: '#efe2c8',
+    whiteEdge: '#33291c',
+    whiteDetail: '#93805f',
+    whiteSheen: '#fffdf6',
+    blackFill: '#2b2116',
+    blackEdge: '#0d0906',
+    blackDetail: '#6e5c42',
+    blackSheen: '#a8916f',
+  },
+  ink: {
+    // On a dark ground the light men need a brighter body to stay readable.
+    whiteFill: '#f2ece0',
+    whiteEdge: '#0b0a08',
+    whiteDetail: '#a89c88',
+    whiteSheen: '#ffffff',
+    blackFill: '#3b342b',
+    blackEdge: '#0a0806',
+    blackDetail: '#6f6558',
+    blackSheen: '#c2b6a2',
+  },
+};
+
+export function paletteFor(theme: string): PiecePalette {
+  return PALETTES[theme] ?? PALETTES.washi;
+}
+
+/** Base64-encodes the SVG for a data URI. */
+function toBase64(svg: string): string {
+  const bytes = new TextEncoder().encode(svg);
+  let binary = '';
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary);
+}
+
+/**
+ * A CSS `url("data:image/svg+xml;base64,...")` value for a piece.
+ *
+ * Chessground paints pieces with background-image, so this has to be a data
+ * URI rather than inline markup. Base64 is used rather than percent-encoding:
+ * it leaves no quotes, parentheses or angle brackets inside the CSS url()
+ * token, which is what makes the rule safe to inline in a <style> element.
+ */
+export function pieceImage(
+  role: PieceRole,
+  color: 'white' | 'black',
+  palette: PiecePalette = PALETTES.washi,
+): string {
+  const key = `${role}-${color}-${palette.whiteFill}-${palette.blackFill}`;
   let v = CACHE.get(key);
   if (!v) {
-    // The payload must survive being embedded in a CSS url() token inside an
-    // inline <style>, so every structural character is percent-encoded.
-    const svg = markup(role, color)
-      .replace(/%/g, '%25')
-      .replace(/</g, '%3C')
-      .replace(/>/g, '%3E')
-      .replace(/"/g, "'")
-      .replace(/#/g, '%23')
-      .replace(/'/g, '%27')
-      .replace(/ /g, '%20');
-    v = `url("data:image/svg+xml,${svg}")`;
+    v = `url("data:image/svg+xml;base64,${toBase64(markup(role, color, palette))}")`;
     CACHE.set(key, v);
   }
   return v;
 }
 
 /** Emits the CSS rules chessground needs to paint the set. */
-export function pieceCss(): string {
+export function pieceCss(palette: PiecePalette = PALETTES.washi): string {
   const roles: PieceRole[] = ['king', 'queen', 'rook', 'bishop', 'knight', 'pawn'];
   const colors = ['white', 'black'] as const;
   return roles
     .flatMap((role) =>
       colors.map(
         (color) =>
-          `.cg-wrap piece.${role}.${color} { background-image: ${pieceImage(role, color)}; }`,
+          `.cg-wrap piece.${role}.${color} { background-image: ${pieceImage(role, color, palette)}; }`,
       ),
     )
     .join('\n');

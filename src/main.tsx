@@ -1,8 +1,14 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
+// Registers the service worker. Required for offline play and for the browser
+// to consider the app installable at all.
+import './pwa';
 
+// base.css is layout only; without the colour sheet the board renders as a
+// blank, fully transparent square.
 import '@lichess-org/chessground/assets/chessground.base.css';
+import '@lichess-org/chessground/assets/chessground.brown.css';
 import './styles/tokens.css';
 import './styles/base.css';
 import './styles/ui.css';

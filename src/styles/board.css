@@ -52,9 +52,29 @@
   z-index: 1;
 }
 
-/* --- squares ------------------------------------------------------------ */
-.board-inner cg-board {
-  background-color: transparent;
+/* --- squares ------------------------------------------------------------
+   chessground splits its CSS in two: base.css is layout only, <theme>.css
+   carries the actual square artwork. base.css alone renders a transparent
+   board, so the colour sheet must be imported too (see src/main.tsx).
+   We do not re-implement the checkerboard: the shipped one is an 8x8 pattern
+   that is already correct for both orientations, because flipping perspective
+   maps light squares onto light squares.
+   ---------------------------------------------------------------------- */
+
+.board-inner square.last-move {
+  background-color: color-mix(in srgb, var(--brass) 45%, transparent);
+}
+.board-inner square.move-dest {
+  background: radial-gradient(circle at center, var(--sq-move) 0 26%, transparent 27%);
+}
+.board-inner square.oc.move-dest {
+  background: none;
+}
+.board-inner square.selected {
+  background-color: color-mix(in srgb, var(--brass) 55%, transparent);
+}
+.board-inner square.check {
+  background: radial-gradient(circle at center, var(--sq-check) 0 30%, transparent 32%);
 }
 
 .board-inner square.last-move {

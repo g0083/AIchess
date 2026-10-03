@@ -10,7 +10,8 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Chessground } from '@lichess-org/chessground';
 import type { Api as ChessgroundApi } from '@lichess-org/chessground/api';
 import type { Key as CgKey } from '@lichess-org/chessground/types';
-import { pieceCss } from '../chess/pieces';
+import { pieceCss, paletteFor } from '../chess/pieces';
+import { useSettings } from '../store/settings';
 import type { Color } from '../chess/rules';
 
 /**
@@ -64,15 +65,18 @@ export interface BoardProps {
   ariaLabel?: string;
 }
 
-/** Injects the generated piece artwork exactly once per document. */
-let styleInjected = false;
-function injectPieceCss() {
-  if (styleInjected) return;
-  const el = document.createElement('style');
-  el.id = 'cg-piece-set';
-  el.textContent = pieceCss();
-  document.head.appendChild(el);
-  styleInjected = true;
+/**
+ * Injects the generated piece artwork. Re-runs when the theme changes, because
+ * the colours are baked into the SVG and cannot come from CSS variables.
+ */
+function injectPieceCss(theme: string) {
+  let el = document.getElementById('cg-piece-set') as HTMLStyleElement | null;
+  if (!el) {
+    el = document.createElement('style');
+    el.id = 'cg-piece-set';
+    document.head.appendChild(el);
+  }
+  el.textContent = pieceCss(paletteFor(theme));
 }
 
 export function Board(props: BoardProps): React.JSX.Element {
@@ -94,8 +98,19 @@ export function Board(props: BoardProps): React.JSX.Element {
   } = props;
 
   const wrapRef = useRef<HTMLDivElement | null>(null);
+  // chessground takes over the children of the element it is given, so it must
+  // be handed the dedicated .cg-wrap node - never the outer .board-slot, whose
+  // children include the .board-inner frame (wood grain, vignette, shadow).
+  const cgRef = useRef<HTMLDivElement | null>(null);
   const apiRef = useRef<ChessgroundApi | null>(null);
   const [size, setSize] = useState(360);
+  const theme = useSettings((s) => s.theme);
+
+  // Re-emit the artwork when the theme changes; the colours are baked into
+  // the SVG data URIs.
+  useEffect(() => {
+    injectPieceCss(theme);
+  }, [theme]);
 
   // Chessground callbacks are captured once; routing them through refs keeps
   // the latest props visible without reconfiguring the board every render.
@@ -126,8 +141,8 @@ export function Board(props: BoardProps): React.JSX.Element {
 
   // --- create the board once ---------------------------------------------
   useLayoutEffect(() => {
-    injectPieceCss();
-    const el = wrapRef.current;
+    injectPieceCss(theme);
+    const el = cgRef.current;
     if (!el) return;
     const api = Chessground(el, {
       fen,
@@ -236,7 +251,7 @@ export function Board(props: BoardProps): React.JSX.Element {
         role="application"
         aria-label={ariaLabel}
       >
-        <div className="cg-wrap" style={{ width: size, height: size }} />
+        <div className="cg-wrap" ref={cgRef} style={{ width: size, height: size }} />
       </div>
     </div>
   );

@@ -1,0 +1,25 @@
+Fix invisible board and missing PWA install
+
+Three separate causes, none of which threw an error:
+
+1. No square artwork. chessground splits its CSS: base.css is layout only and
+   brown.css carries the checkerboard. Importing base.css alone renders a fully
+   transparent board. chessground also creates square nodes only for
+   highlighted squares, so an empty board was the correct DOM.
+
+2. Chessground() was handed .board-slot instead of .cg-wrap. It wipes the
+   children of the element it receives, which deleted .board-inner and all of
+   its styling (wood grain, vignette, shadows).
+
+3. The piece SVG used fill="var(--piece-white)". A data-URI SVG renders in an
+   isolated document with no access to page CSS variables, so the men came out
+   unpainted. Colours are now literal, per theme, and the stylesheet is
+   regenerated when the theme changes. Switched to base64 so no structural
+   characters remain inside the CSS url() token.
+
+Also registers the service worker, which never happened: injectRegister was
+null and registerSW was never called. Without it the app was offline-dead and
+Chrome refused to offer installation.
+
+Adds a jsdom board suite covering structure, piece count, artwork injection
+and literal colours, plus a service-worker alias for tests.

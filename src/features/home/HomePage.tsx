@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useSettings, playerName, initialOf } from '../../store/settings';
 import { Icon, ICONS } from '../../components/ui';
+import { InstallCard } from '../../components/InstallCard';
 import { useProgress, solvedToday, dailyDone as isDailyDone } from '../../store/progress';
 
 export function HomePage(): React.JSX.Element {
@@ -28,6 +29,10 @@ export function HomePage(): React.JSX.Element {
         <Stat label="パズル評価" value={`${puzzleRating}`} unit="" icon={ICONS.puzzle} />
         <Stat label="AIラダー" value={`${aiRating}`} unit="" icon={ICONS.trophy} />
         <Stat label="今日の解答" value={`${solved}`} unit="問" icon={ICONS.check} />
+      </div>
+
+      <div style={{ marginBottom: 'var(--sp-4)' }}>
+        <InstallCard />
       </div>
 
       <div className="quick-grid">
