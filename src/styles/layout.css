@@ -130,12 +130,253 @@
   margin-bottom: var(--sp-4);
 }
 
+/* --- game shell ----------------------------------------------------------
+   Base (column-less) definition. The breakpoints below place these three
+   areas into a grid; the rules here only describe what each area is made of.
+   ---------------------------------------------------------------------- */
+.game-shell {
+  display: grid;
+  gap: var(--sp-3);
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: var(--sp-2);
+  padding-bottom: var(--safe-b);
+}
+
+.game-shell__players {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
+.game-shell__board {
+  display: grid;
+  /* stretch, not center: the board area must fill its grid track so that
+     .board-slot is handed a definite height to measure. */
+  place-items: stretch;
+  min-width: 0;
+  min-height: 0;
+}
+
+.game-shell__side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  min-height: 0;
+  min-width: 0;
+}
+
+/* --- player cards -------------------------------------------------------- */
+.player-card {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  min-width: 0;
+}
+.player-card--active {
+  border-color: var(--brass);
+  box-shadow: 0 0 0 1px var(--brass) inset;
+}
+
+.avatar {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--ink-soft);
+  box-shadow: var(--shadow-1);
+}
+.avatar--white {
+  background: linear-gradient(160deg, #8a7a5e, #5d5040);
+}
+.avatar--black {
+  background: linear-gradient(160deg, #3b342b, #191510);
+}
+.avatar--dark {
+  background: linear-gradient(160deg, var(--brass), var(--brass-deep));
+}
+
+.player-card__body {
+  min-width: 0;
+  flex: 1;
+}
+.player-card__name {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.player-card__sub {
+  font-size: var(--fs-xs);
+  color: var(--ink-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --- clocks -------------------------------------------------------------- */
+.clock {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+.clock__time {
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--fs-lg);
+  line-height: 1.1;
+  letter-spacing: 0;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--paper-sunken);
+  min-width: 88px;
+  text-align: right;
+}
+.clock--active .clock__time {
+  background: var(--ink);
+  color: var(--paper);
+}
+.clock--low .clock__time {
+  background: var(--oxblood);
+  color: #fff;
+}
+.clock__meta {
+  font-size: var(--fs-xs);
+  color: var(--ink-faint);
+}
+.clock__save {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--oxblood);
+}
+
+/* --- move list ----------------------------------------------------------- */
+.movelist {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-size: var(--fs-sm);
+  min-height: 0;
+  overflow-y: auto;
+}
+.movelist__row {
+  display: grid;
+  grid-template-columns: 42px 1fr 1fr;
+  gap: var(--sp-1);
+  align-items: center;
+}
+.movelist__num {
+  color: var(--ink-faint);
+  font-family: var(--font-num);
+  font-size: var(--fs-xs);
+  text-align: right;
+  padding-right: var(--sp-2);
+}
+.movelist__move {
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+  text-align: left;
+  font-family: var(--font-num);
+  letter-spacing: 0.01em;
+  min-height: 30px;
+  white-space: nowrap;
+}
+.movelist__move:hover {
+  background: var(--paper-sunken);
+}
+.movelist__move[aria-current='true'] {
+  background: var(--brass);
+  color: #fff;
+}
+.movelist__move--empty {
+  cursor: default;
+}
+
+/* Mistake markers, drawn as a small leading dot. */
+.movelist__move[data-grade='mistake']::before,
+.movelist__move[data-grade='blunder']::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: middle;
+}
+.movelist__move[data-grade='mistake']::before {
+  background: var(--warn);
+}
+.movelist__move[data-grade='blunder']::before {
+  background: var(--danger);
+}
+.movelist__move[data-grade='best']::before,
+.movelist__move[data-grade='good']::before,
+.movelist__move[data-grade='inaccuracy']::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: middle;
+  background: var(--ok);
+}
+.movelist__move[data-grade='inaccuracy']::before {
+  background: var(--info);
+}
+
+/* --- evaluation bar ------------------------------------------------------ */
+.evalbar {
+  position: relative;
+  width: 14px;
+  border-radius: 7px;
+  overflow: hidden;
+  background: #3a352d;
+  box-shadow: inset 0 0 0 1px var(--rule);
+  flex: none;
+}
+.evalbar__white {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(180deg, #fbf6ea, #ddd2bc);
+  transition: height 220ms var(--ease);
+}
+.evalbar__mid {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: var(--rule-strong);
+}
+
 /* --- responsive game layout --------------------------------------------- */
 @media (min-width: 1280px) {
   .game-shell {
     grid-template-columns: var(--player-w) minmax(0, auto) var(--panel-w);
     grid-template-areas: 'players board panel';
-    align-items: start;
+    /* The board track must fill the row, otherwise .board-slot is measured
+       against its own content height and collapses. The two side columns opt
+       out individually with align-self: start. */
+    align-items: stretch;
     gap: var(--sp-4);
     padding: var(--sp-4);
   }
@@ -145,12 +386,14 @@
     flex-direction: column;
     gap: var(--sp-2);
     padding-top: 1px;
+    align-self: start;
   }
   .game-shell__board {
     grid-area: board;
   }
   .game-shell__side {
     grid-area: panel;
+    align-self: start;
     max-height: 100%;
     overflow-y: auto;
   }
@@ -162,7 +405,8 @@
     grid-template-areas:
       'players panel'
       'board panel';
-    align-items: start;
+    /* See the desktop note: the board track stretches, the rest does not. */
+    align-items: stretch;
     gap: var(--sp-3);
   }
   .game-shell__players {
@@ -170,6 +414,7 @@
     display: flex;
     flex-direction: row;
     gap: var(--sp-2);
+    align-self: start;
   }
   .game-shell__players .player-card {
     flex: 1;
@@ -179,6 +424,7 @@
   }
   .game-shell__side {
     grid-area: panel;
+    align-self: start;
     max-height: 100%;
     overflow-y: auto;
   }

@@ -246,8 +246,13 @@
 .board-col {
   display: flex;
   gap: var(--sp-2);
+  /* stretch (not center) on the cross axis: the eval bar must be exactly as
+     tall as the board, and both must fill the row the layout gave us. */
   align-items: stretch;
+  justify-content: center;
+  align-self: stretch;
   min-width: 0;
+  height: 100%;
 }
 .board-tools {
   display: flex;

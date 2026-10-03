@@ -97,6 +97,10 @@ export function Board(props: BoardProps): React.JSX.Element {
     ariaLabel = 'チェス盤',
   } = props;
 
+  // The sizing element is .board-slot, which stretches to fill its parent.
+  // The square size is applied to the children, never to .board-slot itself:
+  // measuring the element you also resize is a feedback loop that shrinks the
+  // board a few pixels on every observation until it hits the minimum.
   const wrapRef = useRef<HTMLDivElement | null>(null);
   // chessground takes over the children of the element it is given, so it must
   // be handed the dedicated .cg-wrap node - never the outer .board-slot, whose
@@ -104,6 +108,7 @@ export function Board(props: BoardProps): React.JSX.Element {
   const cgRef = useRef<HTMLDivElement | null>(null);
   const apiRef = useRef<ChessgroundApi | null>(null);
   const [size, setSize] = useState(360);
+  const sizeRef = useRef(size);
   const theme = useSettings((s) => s.theme);
 
   // Re-emit the artwork when the theme changes; the colours are baked into
@@ -124,14 +129,26 @@ export function Board(props: BoardProps): React.JSX.Element {
   }, [onMove, onSelect, onDrawChange]);
 
   // --- size the board to its container -----------------------------------
+  // .board-slot is never sized from `size` - it stretches to whatever the page
+  // layout gives it, and only its children (.board-inner / .cg-wrap) carry the
+  // measured square. That is what makes reading .board-slot back safe here:
+  // the value reported is always the room the layout offers, never the size we
+  // just wrote. (Sizing .board-slot from this measurement - the previous
+  // behaviour - is a feedback loop that ratchets the board down a few pixels
+  // per observation until it sticks at the 200px minimum.)
   useLayoutEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
     const measure = () => {
       const rect = el.getBoundingClientRect();
-      // Leave a couple of pixels so the drop shadow is never clipped.
+      // Leave a couple of pixels so the drop shadow is never clipped. A
+      // container that has not been laid out yet reports 0; keep the previous
+      // size in that case rather than flashing a 1px board.
+      if (rect.width <= 0 || rect.height <= 0) return;
       const s = Math.max(200, Math.floor(Math.min(rect.width, rect.height) - 4));
-      setSize((prev) => (Math.abs(prev - s) > 1 ? s : prev));
+      if (Math.abs(sizeRef.current - s) <= 1) return;
+      sizeRef.current = s;
+      setSize(s);
     };
     measure();
     const ro = new ResizeObserver(measure);
@@ -244,7 +261,7 @@ export function Board(props: BoardProps): React.JSX.Element {
   }, [animationDuration]);
 
   return (
-    <div className={`board-slot ${className}`} ref={wrapRef} style={{ width: size, height: size }}>
+    <div className={`board-slot ${className}`} ref={wrapRef}>
       <div
         className="board-inner"
         style={{ width: size, height: size }}
