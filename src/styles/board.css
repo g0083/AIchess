@@ -5,29 +5,32 @@
    ========================================================================= */
 
 .board-slot {
-  /* Fills whatever the layout offers; the square size is applied to
-     .board-inner by <Board>. Keeping this element free of any inline size is
-     what lets the ResizeObserver read the available room back safely. */
-  display: grid;
-  place-items: center;
-  /* In a scrolling page the board is driven by the column width. aspect-ratio
-     gives it a definite height without JavaScript. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
   height: auto;
   aspect-ratio: 1 / 1;
   max-width: 100%;
+  min-width: 0;
+  min-height: 0;
+  margin: 0 auto;
 }
 
-/* Inside a game screen the board is bounded by the height of its grid track
-   instead, so the square has to come from the measured size. */
+/* Inside a game screen the board fits its grid track or flex column */
 .game-shell .board-slot {
   flex: 1 1 auto;
   align-self: stretch;
-  width: auto;
+  width: 100%;
   height: 100%;
-  aspect-ratio: auto;
+  aspect-ratio: 1 / 1;
   min-width: 0;
   min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  max-height: 100%;
 }
 
 .board-inner {

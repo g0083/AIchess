@@ -146,11 +146,20 @@ export function Board(props: BoardProps): React.JSX.Element {
     if (!el) return;
     const measure = () => {
       const rect = el.getBoundingClientRect();
-      // Leave a couple of pixels so the drop shadow is never clipped. A
-      // container that has not been laid out yet reports 0; keep the previous
-      // size in that case rather than flashing a 1px board.
-      if (rect.width <= 0 || rect.height <= 0) return;
-      const s = Math.max(200, Math.floor(Math.min(rect.width, rect.height) - 4));
+      if (rect.width <= 0) return;
+      // In column/scrolling layouts, el's height can collapse to the child inner height (feedback loop).
+      // If width is given and height is either 0 or approximately the minimum child size while width is larger,
+      // determine available height from parent or use width (aspect-ratio 1:1).
+      let availableH = rect.height;
+      if (availableH <= 210 && rect.width > 210) {
+        const parentRect = el.parentElement?.getBoundingClientRect();
+        if (parentRect && parentRect.height > 210) {
+          availableH = parentRect.height;
+        } else {
+          availableH = rect.width;
+        }
+      }
+      const s = Math.max(200, Math.floor(Math.min(rect.width, availableH) - 4));
       if (Math.abs(sizeRef.current - s) <= 1) return;
       sizeRef.current = s;
       setSize(s);
@@ -158,6 +167,7 @@ export function Board(props: BoardProps): React.JSX.Element {
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
+    if (el.parentElement) ro.observe(el.parentElement);
     return () => ro.disconnect();
   }, []);
 

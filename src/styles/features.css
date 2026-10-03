@@ -251,7 +251,10 @@
   align-items: stretch;
   justify-content: center;
   align-self: stretch;
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
+  min-height: 0;
   height: 100%;
 }
 .board-tools {
