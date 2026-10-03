@@ -60,7 +60,7 @@ export const PERSONALITIES: Personality[] = [
   {
     id: 'aggressive',
     name: '攻撃的',
-    description: '常に王法を狙います。多少不利でも攻撃を選びます。',
+    description: '常に相手キングへの直接攻撃を狙います。多少不利でも攻めを優先します。',
     materialWeight: 0.95,
     aggressionWeight: 1.35,
     positionalWeight: 0.95,
@@ -69,7 +69,7 @@ export const PERSONALITIES: Personality[] = [
   {
     id: 'conservative',
     name: '保守的',
-    description: '王を安全に守り、相手に時間を与えます。',
+    description: '王を安全に守り、相手の隙をじっくり待ちます。',
     materialWeight: 1,
     aggressionWeight: 0.75,
     positionalWeight: 1.05,
@@ -78,7 +78,7 @@ export const PERSONALITIES: Personality[] = [
   {
     id: 'adventurous',
     name: '大胆',
-    description: '形を無視してでも駒を取りに行きます。',
+    description: '形勢の乱れを恐れず、積極的に駒を取りに行きます。',
     materialWeight: 0.85,
     aggressionWeight: 1.2,
     positionalWeight: 0.8,
@@ -86,8 +86,8 @@ export const PERSONALITIES: Personality[] = [
   },
   {
     id: 'positional',
-    name: '長線',
-    description: '駒数よりも、最後にどの手で勝敗を決めるかを考えます。',
+    name: '大局観',
+    description: '目先の駒得よりも、駒の配置と長期的な構造を重視します。',
     materialWeight: 1.05,
     aggressionWeight: 0.95,
     positionalWeight: 1.3,
@@ -156,7 +156,7 @@ export const LEVELS: LevelSpec[] = [
   },
   {
     id: 'casual',
-    name: '初級+',
+    name: 'アマチュア',
     elo: 1000,
     budgetType: 'depth',
     budgetValue: 6,
@@ -166,7 +166,7 @@ export const LEVELS: LevelSpec[] = [
     temperature: 60,
     minThinkMs: 400,
     needsFullEngine: false,
-    note: '趣味の強い者です。危険な手順を見落とします。',
+    note: '基本ルールを理解し、駒の連携を意識し始めたレベルです。',
   },
   {
     id: 'casualPlus',
@@ -266,7 +266,7 @@ export interface AiConfig {
   side: SideChoice;
   engine: EngineVariant;
   hintLevel: HintLevel;
-  /** 相手の指手を評価して、大失敗などを対局後に点评する。 */
+  /** 相手の指し手を評価して、悪手などを対局後に講評する。 */
   blunderDetection: boolean;
   /** エンジンが考えている間だけ時計を止める。 */
   clockStopsOnEngine: boolean;
@@ -290,7 +290,7 @@ export const DEFAULT_AI: AiConfig = {
   clockStopsOnEngine: true,
 };
 
-/** level が custom のときは custom の数値、それ以外は段欧の tuning を返す。 */
+/** level が custom のときは custom の数値、それ以外は各レベルのチューニングを返す。 */
 export function effectiveSpec(cfg: AiConfig): LevelSpec {
   if (cfg.level !== 'custom') return getLevel(cfg.level);
   return {
@@ -314,7 +314,7 @@ export function getPersonality(id: PersonalityId): Personality {
   return PERSONALITIES.find((p) => p.id === id) ?? PERSONALITIES[0];
 }
 
-/** 段歐の日本語名を一覧用に返す。 */
+/** レベルの日本語名を一覧用に返す。 */
 export function levelName(id: LevelId): string {
   return id === 'custom' ? 'カスタム' : getLevel(id).name;
 }

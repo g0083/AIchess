@@ -3,12 +3,13 @@
  * The engine runs continuously and the evaluation updates live.
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Chess } from 'chess.js';
 import { Board } from '../../components/Board';
 import { MoveList, PlyNav } from '../../components/MoveList';
 import { Field, Icon, ICONS } from '../../components/ui';
 import { useSettings } from '../../store/settings';
-import { Engine, evalLabelJa, evalToRatio } from '../../ai/stockfish';
+import { Engine, evalLabelJa, evalToRatio, latestByPv } from '../../ai/stockfish';
 import { useToast } from '../../components/Toast';
 import type { GradedMove } from '../../chess/session';
 import type { Color } from '../../chess/rules';
@@ -17,14 +18,26 @@ const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
 export function AnalysisPage(): React.JSX.Element {
   const toast = useToast();
+  const [searchParams] = useSearchParams();
+  const initialFenParam = searchParams.get('fen')?.trim();
+  const initialFen = useMemo(() => {
+    if (!initialFenParam) return START;
+    try {
+      new Chess(initialFenParam);
+      return initialFenParam;
+    } catch {
+      return START;
+    }
+  }, [initialFenParam]);
+
   const engineVariant = useSettings((s) => s.ai.engine);
   const fullEngineReady = useSettings((s) => s.fullEngineReady);
   const variant = engineVariant === 'full' && fullEngineReady ? 'full' : 'lite';
 
   const [orientation, setOrientation] = useState<Color>('w');
-  const [fenInput, setFenInput] = useState(START);
+  const [fenInput, setFenInput] = useState(initialFen);
   const [pgnInput, setPgnInput] = useState('');
-  const [startFen, setStartFen] = useState(START);
+  const [startFen, setStartFen] = useState(initialFen);
   const [moves, setMoves] = useState<GradedMove[]>([]);
   const [cursor, setCursor] = useState(0);
   const [evalCp, setEvalCp] = useState<number | null>(null);
@@ -56,6 +69,18 @@ export function AnalysisPage(): React.JSX.Element {
   const fen = positions[Math.min(cursor, positions.length - 1)] ?? START;
   const turn = useMemo(() => new Chess(fen).turn(), [fen]);
 
+  const dests = useMemo(() => {
+    const out: Record<string, string[]> = {};
+    const c = new Chess(fen);
+    for (const m of c.moves({ verbose: true })) (out[m.from] ??= []).push(m.to);
+    return out;
+  }, [fen]);
+
+  const lastMove = useMemo(() => {
+    const m = moves[Math.min(cursor, moves.length) - 1];
+    return m ? ([m.from, m.to] as [string, string]) : undefined;
+  }, [moves, cursor]);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -77,11 +102,13 @@ export function AnalysisPage(): React.JSX.Element {
           sideToMove: turn,
           onInfo: (i) => {
             // Discard results from a search that has already been superseded.
-            if (seq === seqRef.current) setEvalCp(i.evalCp);
+            if (seq === seqRef.current && (i.multipv === 1 || infos.length === 1)) {
+              setEvalCp(i.evalCp);
+            }
           },
         });
         if (seq === seqRef.current) {
-          const best = infos.filter((i) => i.pv.length > 0).at(-1);
+          const best = infos.find((i) => i.multipv === 1) ?? latestByPv(infos)[0];
           if (best) setEvalCp(best.evalCp);
         }
       } catch (err) {
@@ -97,10 +124,11 @@ export function AnalysisPage(): React.JSX.Element {
 
 
   /** Plays a move on the board, truncating any later moves. */
-  const onMove = (from: string, to: string) => {
+  const onMove = (from: string, to: string, promotion?: string) => {
     const c = new Chess(fen);
-    const m = c.moves({ verbose: true }).find((x) => x.from === from && x.to === to);
-    if (!m) return;
+    const moveCandidates = c.moves({ verbose: true }).filter((x) => x.from === from && x.to === to);
+    if (moveCandidates.length === 0) return;
+    const m = (promotion ? moveCandidates.find((x) => x.promotion === promotion) : undefined) ?? moveCandidates[0];
     const mv = c.move({ from, to, promotion: m.promotion });
     if (!mv) return;
     setMoves((prev) => [
@@ -112,6 +140,7 @@ export function AnalysisPage(): React.JSX.Element {
         to: mv.to as never,
         piece: mv.piece,
         color: mv.color,
+        promotion: mv.promotion,
         fen: c.fen(),
         castle: mv.flags.includes('k') || mv.flags.includes('q'),
         enPassant: mv.flags.includes('e'),
@@ -150,10 +179,9 @@ export function AnalysisPage(): React.JSX.Element {
       return;
     }
     const hist = c.history({ verbose: true });
-    // Replaying the history backwards reveals the starting position.
-    const probe = new Chess();
-    for (const _ of hist) probe.undo();
-    setStartFen(probe.fen());
+    const pgnFen = c.header()['FEN'];
+    const baseFen = pgnFen || START;
+    setStartFen(baseFen);
     setMoves(
       hist.map((m, i) => ({
         ply: i + 1,
@@ -162,6 +190,7 @@ export function AnalysisPage(): React.JSX.Element {
         to: m.to as never,
         piece: m.piece,
         color: m.color,
+        promotion: m.promotion,
         fen: '',
         castle: m.flags.includes('k') || m.flags.includes('q'),
         enPassant: m.flags.includes('e'),
@@ -179,9 +208,7 @@ export function AnalysisPage(): React.JSX.Element {
   };
 
   return (
-    <div className="game-shell">
-      <div className="game-shell__players" />
-
+    <div className="game-shell game-shell--analysis">
       <div className="game-shell__board">
         <div className="board-col">
           <div className="evalbar" role="img" aria-label="評価">
@@ -191,7 +218,14 @@ export function AnalysisPage(): React.JSX.Element {
             />
             <div className="evalbar__mid" />
           </div>
-          <Board fen={fen} turn={turn} orientation={orientation} onMove={onMove} />
+          <Board
+            fen={fen}
+            turn={turn}
+            orientation={orientation}
+            dests={dests}
+            lastMove={lastMove}
+            onMove={onMove}
+          />
         </div>
       </div>
 

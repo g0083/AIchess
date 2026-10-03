@@ -204,6 +204,9 @@ export const useProgress = create<ProgressState>()((set, get) => ({
       puzzleDeviation: deviation,
       daily: { ...cur.daily, [today]: { solved: entry.solved + 1, date: today } },
     });
+    if (correct) {
+      get().grantAchievement('first-puzzle');
+    }
     scheduleSave();
     get().touch();
   },
@@ -245,7 +248,13 @@ export const useProgress = create<ProgressState>()((set, get) => ({
   },
 
   addGame: () => {
-    set({ gamesToday: get().gamesToday + 1 });
+    const nextToday = get().gamesToday + 1;
+    set({ gamesToday: nextToday });
+    const cur = get();
+    const totalDaily = Object.values(cur.daily).reduce((a, d) => a + (d.solved ?? 0), 0);
+    if (nextToday >= 10 || (nextToday + totalDaily) >= 10) {
+      get().grantAchievement('ten-games');
+    }
     scheduleSave();
   },
 }));

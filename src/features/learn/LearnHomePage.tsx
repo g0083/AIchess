@@ -7,6 +7,8 @@ import { Icon, ICONS, Segmented } from '../../components/ui';
 import { CLASSES, LESSONS } from '../../content/lessons';
 import { GLOSSARY, GLOSSARY_CATEGORIES, type GlossCategory } from '../../content/glossary';
 import { PUZZLES } from '../../content/puzzles';
+import { OPENINGS, FAMILY_LABELS, type OpeningFamily } from '../../content/openings';
+import { Chess } from 'chess.js';
 import { useProgress, dueCards } from '../../store/progress';
 import { PuzzBoard } from './PuzzBoard';
 import { LessonPlayer } from './LessonPlayer';
@@ -101,7 +103,7 @@ function LearnIndex(): React.JSX.Element {
             to="/learn/openings"
             icon={ICONS.info}
             title="定石トレーナー"
-            desc="手順を穴あけして覺えていきます。"
+            desc="穴埋め形式で手順を覚えていきます。"
           />
           <TrainCard
             to="/learn/glossary"
@@ -178,7 +180,7 @@ function PuzzlesRoute({ daily = false }: { daily?: boolean }): React.JSX.Element
       <div className="page__head">
         <h1 className="page__title">{daily ? '今日の課題' : '戦術パズル'}</h1>
         <p className="page__lede">
-          評価 {rating}　/　復習差不多的なものは {due} 問
+          評価 {rating}　/　復習対象 {due} 問
         </p>
       </div>
       {list.length === 0 ? (
@@ -278,18 +280,140 @@ function GlossaryPage(): React.JSX.Element {
 }
 
 function OpeningsPage(): React.JSX.Element {
+  const [family, setFamily] = useState<OpeningFamily | 'all'>('all');
+  const [selectedId, setSelectedId] = useState<string>(OPENINGS[0]?.id ?? '');
+  const nav = useNavigate();
+
+  const filtered = useMemo(
+    () => (family === 'all' ? OPENINGS : OPENINGS.filter((o) => o.family === family)),
+    [family],
+  );
+
+  const selected = useMemo(
+    () => filtered.find((o) => o.id === selectedId) ?? filtered[0],
+    [filtered, selectedId],
+  );
+
+  const line = selected?.lines[0];
+
+  const fen = useMemo(() => {
+    if (!line) return '';
+    try {
+      const c = new Chess();
+      for (const m of line.moves) c.move(m);
+      return c.fen();
+    } catch {
+      return '';
+    }
+  }, [line]);
+
   return (
     <div className="page page--narrow">
       <div className="page__head">
         <h1 className="page__title">定石トレーナー</h1>
-        <p className="page__lede">自分の定石を2〜3本に絞って覚えるのがコツです。</p>
+        <p className="page__lede">代表的な定石の基本手順、狙い、初心者が陥りやすいミスを学びます。</p>
       </div>
-      <div className="card card--pad">
-        <p>定石の内容は準備中です。理屈ではなく指し手として覚えるのがコツです。</p>
-        <Link className="btn btn--primary" to="/learn">
-          クラスへ戻る
-        </Link>
+
+      <div style={{ marginBottom: 'var(--sp-4)' }}>
+        <Segmented
+          value={family}
+          onChange={(v) => {
+            setFamily(v);
+            const first = v === 'all' ? OPENINGS[0] : OPENINGS.find((o) => o.family === v);
+            if (first) setSelectedId(first.id);
+          }}
+          label="定石系統"
+          options={[
+            { value: 'all' as const, label: 'すべて' },
+            { value: 'e4' as const, label: '1.e4 系' },
+            { value: 'd4' as const, label: '1.d4 系' },
+            { value: 'c4' as const, label: '1.c4 系' },
+            { value: 'indian' as const, label: 'インド系' },
+          ]}
+        />
       </div>
+
+      <div className="board-tools board-tools--wrap" style={{ marginBottom: 'var(--sp-3)' }}>
+        {filtered.map((o) => (
+          <button
+            key={o.id}
+            className={`btn btn--sm${selected?.id === o.id ? ' btn--primary' : ''}`}
+            onClick={() => setSelectedId(o.id)}
+          >
+            {o.name}
+          </button>
+        ))}
+      </div>
+
+      {selected && line ? (
+        <section className="card card--pad">
+          <div className="class-card__head">
+            <h2 className="class-card__title">{selected.name}</h2>
+            <span className="badge badge--brass">難易度 {'★'.repeat(selected.difficulty)}</span>
+          </div>
+          <p className="dim mono" style={{ fontSize: '0.8rem', margin: '2px 0 8px' }}>
+            {selected.en} ({FAMILY_LABELS[selected.family]})
+          </p>
+          <p style={{ marginBottom: 'var(--sp-3)' }}>{selected.summary}</p>
+
+          <h3 className="card__title" style={{ marginTop: 'var(--sp-3)' }}>
+            推奨手順
+          </h3>
+          <div className="board-tools board-tools--wrap" style={{ marginBottom: 'var(--sp-3)' }}>
+            {line.moves.map((m, i) => (
+              <span key={i} className="badge">
+                <span className="num" style={{ opacity: 0.7, marginRight: 4 }}>
+                  {i % 2 === 0 ? `${Math.floor(i / 2) + 1}.` : '..'}
+                </span>
+                {m}
+              </span>
+            ))}
+          </div>
+
+          <h3 className="card__title" style={{ marginTop: 'var(--sp-3)' }}>
+            手順の狙い
+          </h3>
+          <ul className="prose" style={{ paddingLeft: '1.2em', marginBottom: 'var(--sp-3)' }}>
+            {line.ideas.map((idea, i) => (
+              <li key={i}>{idea}</li>
+            ))}
+          </ul>
+
+          <h3 className="card__title">よくある失敗</h3>
+          <ul className="prose" style={{ paddingLeft: '1.2em', marginBottom: 'var(--sp-3)' }}>
+            {line.mistakes.map((mis, i) => (
+              <li key={i}>{mis}</li>
+            ))}
+          </ul>
+
+          {line.counters?.length ? (
+            <>
+              <h3 className="card__title">相手の有力な対抗策</h3>
+              <ul className="prose" style={{ paddingLeft: '1.2em', marginBottom: 'var(--sp-3)' }}>
+                {line.counters.map((c, i) => (
+                  <li key={i}>{c}</li>
+                ))}
+              </ul>
+            </>
+          ) : null}
+
+          <div className="board-tools" style={{ marginTop: 'var(--sp-4)' }}>
+            {fen ? (
+              <button
+                className="btn btn--primary"
+                onClick={() => nav(`/play/analysis?fen=${encodeURIComponent(fen)}`)}
+              >
+                この定石局面を検討する
+              </button>
+            ) : null}
+            <Link className="btn" to="/learn">
+              学習ホームへ戻る
+            </Link>
+          </div>
+        </section>
+      ) : (
+        <div className="empty">該当する定石がありません。</div>
+      )}
     </div>
   );
 }

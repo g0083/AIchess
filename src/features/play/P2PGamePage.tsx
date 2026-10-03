@@ -73,7 +73,9 @@ export function P2PGamePage({ role }: { role: 'host' | 'guest' }): React.JSX.Ele
     peerRef.current = p2p.peer?.name ?? '接続中';
   }, [p2p.peer]);
 
-  useEffect(() => () => p2p.close(), [p2p]);
+  const closeRef = useRef(p2p.close);
+  closeRef.current = p2p.close;
+  useEffect(() => () => closeRef.current(), []);
 
   const peerName = p2p.peer?.name ?? '接続中';
   const whiteName = role === 'host' ? myName : peerName;
@@ -213,7 +215,7 @@ export function P2PGamePage({ role }: { role: 'host' | 'guest' }): React.JSX.Ele
         footer={
           <>
             <button className="btn" onClick={p2p.declineDraw}>
-              拒む
+              辞退する
             </button>
             <button className="btn btn--primary" onClick={p2p.acceptDraw}>
               受け入れる
@@ -227,14 +229,14 @@ export function P2PGamePage({ role }: { role: 'host' | 'guest' }): React.JSX.Ele
       <Dialog
         open={p2p.rematchOffered}
         title="再戦の申し出"
-        onClose={() => undefined}
+        onClose={p2p.declineRematch}
         footer={
           <>
-            <button className="btn" onClick={p2p.declineDraw}>
+            <button className="btn" onClick={p2p.declineRematch}>
               やめる
             </button>
             <button className="btn btn--primary" onClick={p2p.restart}>
-              この盤面で続ける
+              再戦する
             </button>
           </>
         }

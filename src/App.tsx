@@ -102,6 +102,7 @@ function Shell({ configReady }: { configReady: boolean }): React.JSX.Element {
                 <Route path="/learn/*" element={<LearnHomePage />} />
                 <Route path="/meta" element={<MetaPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/p2p" element={<Navigate to="/play/online" replace />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             ) : (
@@ -172,7 +173,7 @@ function BottomNav({ pathname }: { pathname: string }): React.JSX.Element {
 
 function ModeChooser(): React.JSX.Element {
   return (
-    <div className="page">
+    <div className="page page--wide">
       <div className="page__head">
         <h1 className="page__title">対戦</h1>
         <p className="page__lede">4つの遊び方から選べます。</p>

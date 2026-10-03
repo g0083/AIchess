@@ -41,13 +41,14 @@ export interface P2PApi {
   chat: ChatLine[];
   sendChat: (text: string) => void;
   /** Applies or proposes a move from the given squares. */
-  play: (from: string, to: string) => void;
+  play: (from: string, to: string, promotion?: string) => void;
   resign: () => void;
   offerDraw: () => void;
   acceptDraw: () => void;
   declineDraw: () => void;
   drawOffered: boolean;
   requestRematch: () => void;
+  declineRematch: () => void;
   rematchOffered: boolean;
   restart: () => void;
   clockRead: (c: Color) => number;
@@ -96,10 +97,12 @@ export function useP2P(opts: UseP2POptions): P2PApi {
   const myColor: Color = role === 'host' ? 'w' : 'b';
 
   /** Applies a validated move locally and records it. */
-  const commit = useCallback((from: string, to: string) => {
+  const commit = useCallback((from: string, to: string, promotion?: string) => {
     const c = chessRef.current;
-    const legal = c.moves({ verbose: true }).find((m) => m.from === from && m.to === to);
-    if (!legal) return false;
+    const candidates = c.moves({ verbose: true }).filter((m) => m.from === from && m.to === to);
+    if (candidates.length === 0) return false;
+    const legal =
+      (promotion ? candidates.find((m) => m.promotion === promotion) : undefined) ?? candidates[0];
     const mv = c.move({ from, to, promotion: legal.promotion });
     if (!mv) return false;
     const next = c.fen();
@@ -153,8 +156,8 @@ export function useP2P(opts: UseP2POptions): P2PApi {
         setPeer(null);
         setReady(false);
       },
-      onMoveProposal: (from, to) => {
-        if (commit(from, to)) {
+      onMoveProposal: (from, to, promotion) => {
+        if (commit(from, to, promotion)) {
           room.sendState(chessRef.current.fen(), movesRef.current.length, `${from}${to}`);
         }
       },
@@ -231,20 +234,21 @@ export function useP2P(opts: UseP2POptions): P2PApi {
 
   // --- player actions ----------------------------------------------------
   const onMove = useCallback(
-    (from: string, to: string) => {
+    (from: string, to: string, promotion?: string) => {
       if (finished || drawOffered) return;
       if (role === 'host') {
-        if (commit(from, to)) {
+        if (commit(from, to, promotion)) {
           roomRef.current?.sendState(chessRef.current.fen(), movesRef.current.length, `${from}${to}`);
         }
       } else {
         // Validate locally for feedback, but do not mutate: the host decides.
         const c = new Chess(fen);
-        const legal = c.moves({ verbose: true }).find((m) => m.from === from && m.to === to);
+        const candidates = c.moves({ verbose: true }).filter((m) => m.from === from && m.to === to);
+        const legal = (promotion ? candidates.find((m) => m.promotion === promotion) : undefined) ?? candidates[0];
         if (legal) roomRef.current?.sendMove(from, to, legal.promotion);
       }
     },
-    [finished, drawOffered, role, fen],
+    [finished, drawOffered, role, fen, commit],
   );
 
   const sendChat = useCallback(
@@ -259,7 +263,7 @@ export function useP2P(opts: UseP2POptions): P2PApi {
 
   const resign = useCallback(() => {
     roomRef.current?.sendResign();
-    finishGame(myColor, '投了');
+    finishGame(myColor === 'w' ? 'b' : 'w', '投了');
   }, [myColor, finishGame]);
 
   const offerDraw = useCallback(() => {
@@ -270,6 +274,7 @@ export function useP2P(opts: UseP2POptions): P2PApi {
   const acceptDraw = useCallback(() => finishGame('draw', '合意'), [finishGame]);
   const declineDraw = useCallback(() => setDrawOffered(false), []);
   const requestRematch = useCallback(() => roomRef.current?.sendRematch(), []);
+  const declineRematch = useCallback(() => setRematchOffered(false), []);
 
   const restart = useCallback(() => {
     chessRef.current = new Chess();
@@ -334,6 +339,7 @@ export function useP2P(opts: UseP2POptions): P2PApi {
     declineDraw,
     drawOffered,
     requestRematch,
+    declineRematch,
     rematchOffered,
     restart,
     clockRead: (side: Color) => clockRef.current.read(side).remaining,

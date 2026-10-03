@@ -93,6 +93,28 @@ export function SettingsPage(): React.JSX.Element {
 
       <section className="card card--pad" style={{ marginBottom: 'var(--sp-4)' }}>
         <h2 className="card__title">
+          <Icon path={ICONS.learn} size={18} />
+          初心者サポート
+        </h2>
+        <Switch
+          label="ヒント時にAIコーチの詳しい理由・狙いを表示する"
+          checked={s.coachExplanation}
+          onChange={(v) => s.set('coachExplanation', v)}
+        />
+        <Switch
+          label="相手の危険な狙いや王手の脅威を警告する"
+          checked={s.showThreats}
+          onChange={(v) => s.set('showThreats', v)}
+        />
+        <Switch
+          label="味方の無防備な駒（守られていない駒）を盤上で注意表示する"
+          checked={s.highlightHanging}
+          onChange={(v) => s.set('highlightHanging', v)}
+        />
+      </section>
+
+      <section className="card card--pad" style={{ marginBottom: 'var(--sp-4)' }}>
+        <h2 className="card__title">
           <Icon path={ICONS.cloud} size={18} />
           公開リンク
         </h2>

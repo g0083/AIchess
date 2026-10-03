@@ -15,7 +15,7 @@ export function MoveList({
   cursor: number;
   onSelect: (index: number) => void;
 }): React.JSX.Element {
-  const endRef = useRef<HTMLButtonElement | null>(null);
+  const endRef = useRef<HTMLDivElement | null>(null);
 
   // Keep the newest move in view while the game is live.
   useEffect(() => {
@@ -54,7 +54,7 @@ export function MoveList({
         初期局面
       </button>
       {rows}
-      <MoveButton move={moves[moves.length - 1]} index={moves.length} cursor={cursor} onSelect={onSelect} endRef={endRef} />
+      <div ref={endRef} />
     </div>
   );
 }

@@ -9,6 +9,7 @@ import { Icon, ICONS } from '../../components/ui';
 import { THEME_LABELS, type Puzzle } from '../../content/puzzles';
 import { useProgress } from '../../store/progress';
 import type { Color } from '../../chess/rules';
+import { explainPuzzleBlunder } from '../../chess/coach';
 
 type Verdict = 'idle' | 'correct' | 'wrong';
 
@@ -21,6 +22,7 @@ export function PuzzBoard({
 }): React.JSX.Element {
   const [index, setIndex] = useState(0);
   const [verdict, setVerdict] = useState<Verdict>('idle');
+  const [wrongReason, setWrongReason] = useState<string>('');
   const [hintLevel, setHintLevel] = useState(0);
   const [orientation, setOrientation] = useState<Color>('w');
   const [solved, setSolved] = useState<Record<string, boolean>>({});
@@ -31,7 +33,7 @@ export function PuzzBoard({
 
   const puzzle = puzzles[Math.min(index, puzzles.length - 1)];
 
-  const fen = useMemo(() => {
+  const baseFen = useMemo(() => {
     if (!puzzle) return '';
     let c = new Chess();
     try {
@@ -42,29 +44,55 @@ export function PuzzBoard({
     return c.fen();
   }, [puzzle]);
 
+  const [currentFen, setCurrentFen] = useState(baseFen);
+  const [lastMove, setLastMove] = useState<[string, string] | undefined>();
+
   const turn = useMemo(() => {
     try {
-      return new Chess(fen).turn();
+      return new Chess(currentFen).turn();
     } catch {
       return 'w';
     }
-  }, [fen]);
+  }, [currentFen]);
+
+  const dests = useMemo(() => {
+    if (verdict === 'correct') return {};
+    try {
+      const c = new Chess(currentFen);
+      const out: Record<string, string[]> = {};
+      for (const m of c.moves({ verbose: true })) (out[m.from] ??= []).push(m.to);
+      return out;
+    } catch {
+      return {};
+    }
+  }, [currentFen, verdict]);
 
   if (!puzzle) {
     return <div className="empty">問題がありません。</div>;
   }
 
   const next = () => {
-    setIndex((i) => (i + 1) % puzzles.length);
+    const nextIdx = (index + 1) % puzzles.length;
+    setIndex(nextIdx);
     setVerdict('idle');
+    setWrongReason('');
     setHintLevel(0);
     setStartedAt(Date.now());
+    setLastMove(undefined);
+    try {
+      setCurrentFen(new Chess(puzzles[nextIdx].fen).fen());
+    } catch {
+      setCurrentFen(puzzles[nextIdx].fen);
+    }
   };
 
   const again = () => {
+    setCurrentFen(baseFen);
     setVerdict('idle');
+    setWrongReason('');
     setHintLevel(0);
     setStartedAt(Date.now());
+    setLastMove(undefined);
   };
 
   return (
@@ -87,10 +115,18 @@ export function PuzzBoard({
           </span>
         </div>
         {verdict === 'wrong' ? (
-          <p className="scanner__error">違う手を指してしまいました。</p>
+          <div className="coach-card" style={{ marginTop: 'var(--sp-2)', borderColor: 'var(--col-danger)' }}>
+            <div className="coach-card__title" style={{ color: 'var(--col-danger)' }}>
+              不正解です
+            </div>
+            <p className="coach-card__text" style={{ margin: 0 }}>
+              {wrongReason || '別の手を考えてみましょう。'}
+            </p>
+          </div>
         ) : null}
         {verdict === 'correct' ? (
-          <div className="ok-text">
+          <div className="ok-text" style={{ marginTop: 'var(--sp-2)' }}>
+            <p><strong>正解です！</strong></p>
             <p>{puzzle.explain}</p>
           </div>
         ) : null}
@@ -98,27 +134,40 @@ export function PuzzBoard({
 
       <div className="board-col" style={{ justifyContent: 'center' }}>
         <Board
-          fen={fen}
+          fen={currentFen}
           turn={verdict === 'correct' ? null : turn}
           orientation={orientation}
+          dests={dests}
+          lastMove={lastMove}
           viewOnly={verdict === 'correct'}
-          onMove={(from, to) => {
-            const c = new Chess(fen);
-            const legal = c.moves({ verbose: true }).find((m) => m.from === from && m.to === to);
-            if (!legal) return;
+          onMove={(from, to, promo) => {
+            const c = new Chess(currentFen);
+            const moveCandidates = c.moves({ verbose: true }).filter((m) => m.from === from && m.to === to);
+            if (moveCandidates.length === 0) return;
+            const legal = (promo ? moveCandidates.find((m) => m.promotion === promo) : undefined) ?? moveCandidates[0];
             const mv = c.move({ from, to, promotion: legal.promotion });
             if (!mv) return;
             const correct = puzzle.solution[0] === mv.san;
             const elapsed = Date.now() - startedAt;
+            setLastMove([from, to]);
             if (correct) {
+              setCurrentFen(c.fen());
               setVerdict('correct');
+              setWrongReason('');
               setSolved((s) => ({ ...s, [puzzle.id]: true }));
               recordPuzzle(puzzle.id, true, elapsed);
               rateCard(puzzle.id, elapsed < 10_000 ? 'easy' : 'good');
             } else {
+              const reason = explainPuzzleBlunder(currentFen, mv.san, puzzle.solution[0]);
+              setWrongReason(reason);
+              setCurrentFen(c.fen());
               setVerdict('wrong');
               recordPuzzle(puzzle.id, false, elapsed);
               rateCard(puzzle.id, 'again');
+              setTimeout(() => {
+                setCurrentFen(baseFen);
+                setLastMove(undefined);
+              }, 700);
             }
           }}
         />

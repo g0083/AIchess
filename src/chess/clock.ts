@@ -26,15 +26,15 @@ export interface ClockConfig {
 }
 
 export const CLOCK_PRESETS: { id: string; name: string; cfg: ClockConfig }[] = [
-  { id: 'sudoku-1', name: '未定速 1分', cfg: { mode: 'sudoku', initialMs: 60_000, incrementMs: 0, periodMs: 0, periods: 0 } },
+  { id: 'sudoku-1', name: '超早指し 1分', cfg: { mode: 'sudoku', initialMs: 60_000, incrementMs: 0, periodMs: 0, periods: 0 } },
   { id: 'sudoku-3-2', name: '3分+2秒', cfg: { mode: 'sudoku', initialMs: 180_000, incrementMs: 2_000, periodMs: 0, periods: 0 } },
   { id: 'sudoku-5-3', name: '5分+3秒', cfg: { mode: 'sudoku', initialMs: 300_000, incrementMs: 3_000, periodMs: 0, periods: 0 } },
   { id: 'sudoku-10-5', name: '10分+5秒', cfg: { mode: 'sudoku', initialMs: 600_000, incrementMs: 5_000, periodMs: 0, periods: 0 } },
   { id: 'sudoku-15-10', name: '15分+10秒', cfg: { mode: 'sudoku', initialMs: 900_000, incrementMs: 10_000, periodMs: 0, periods: 0 } },
   { id: 'sudoku-30', name: '30分', cfg: { mode: 'sudoku', initialMs: 1_800_000, incrementMs: 0, periodMs: 0, periods: 0 } },
   { id: 'twilight-30-20', name: '30分+20秒', cfg: { mode: 'sudoku', initialMs: 1_800_000, incrementMs: 20_000, periodMs: 0, periods: 0 } },
-  { id: 'byoyomi-1x3', name: 'バイヨミー 1分3期', cfg: { mode: 'byoyomi', initialMs: 0, incrementMs: 0, periodMs: 60_000, periods: 3 } },
-  { id: 'byoyomi-3x5', name: 'バイヨミー 3分5期', cfg: { mode: 'byoyomi', initialMs: 0, incrementMs: 0, periodMs: 180_000, periods: 5 } },
+  { id: 'byoyomi-1x3', name: '秒読み 1分3回', cfg: { mode: 'byoyomi', initialMs: 0, incrementMs: 0, periodMs: 60_000, periods: 3 } },
+  { id: 'byoyomi-3x5', name: '秒読み 3分5回', cfg: { mode: 'byoyomi', initialMs: 0, incrementMs: 0, periodMs: 180_000, periods: 5 } },
   { id: 'untimed', name: '無制限', cfg: { mode: 'untimed', initialMs: 0, incrementMs: 0, periodMs: 0, periods: 0 } },
 ];
 
@@ -97,6 +97,7 @@ export class Clock {
       this.state[side].remaining += this.cfg.incrementMs;
     } else if (this.cfg.mode === 'byoyomi') {
       this.state[side].canSave = false;
+      this.state[side].remaining = this.cfg.periodMs;
     }
   }
 
@@ -106,7 +107,7 @@ export class Clock {
    */
   save(side: 'w' | 'b'): boolean {
     const s = this.state[side];
-    if (this.cfg.mode !== 'byoyomi' || !s.canSave || s.flagged) return false;
+    if (this.cfg.mode !== 'byoyomi' || !s.canSave || s.flagged || s.periodsLeft <= 0) return false;
     s.periodsLeft -= 1;
     s.remaining = this.cfg.periodMs;
     s.canSave = false;
@@ -139,10 +140,13 @@ export class Clock {
 
     if (s.remaining > 0) return;
 
-    if (this.cfg.mode === 'byoyomi' && s.periodsLeft > 0) {
-      s.canSave = true;
-      s.remaining = 0;
-      return;
+    if (this.cfg.mode === 'byoyomi') {
+      while (s.remaining <= 0 && s.periodsLeft > 0) {
+        s.periodsLeft -= 1;
+        s.remaining += this.cfg.periodMs;
+        s.canSave = true;
+      }
+      if (s.remaining > 0) return;
     }
     s.remaining = 0;
     s.flagged = true;

@@ -2,16 +2,21 @@
  * Meta page: statistics, achievements and the game archive.
  */
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Icon, ICONS, Segmented } from '../../components/ui';
 import { useProgress, solvedToday } from '../../store/progress';
 import { useArchive } from '../../store/archive';
 import { ACHIEVEMENTS } from '../../content/achievements';
+import { useSettings, playerName } from '../../store/settings';
 
 type Tab = 'stats' | 'awards' | 'archive';
 
 export function MetaPage(): React.JSX.Element {
-  const [tab, setTab] = useState<Tab>('stats');
+  const loc = useLocation();
+  const initialTab = (loc.state as { tab?: Tab })?.tab ?? 'stats';
+  const [tab, setTab] = useState<Tab>(initialTab);
+  const name = useSettings((s) => s.displayName);
+  const me = playerName(name);
   const progress = useProgress();
   const games = useArchive((a) => a.games);
   const hydrateProgress = useProgress((p) => p.hydrate);
@@ -22,9 +27,27 @@ export function MetaPage(): React.JSX.Element {
     void hydrateArchive();
   }, [hydrateProgress, hydrateArchive]);
 
-  const wins = games.filter((g) => g.result === '1-0').length;
-  const losses = games.filter((g) => g.result === '0-1').length;
-  const draws = games.filter((g) => g.result === '1/2-1/2').length;
+  let wins = 0;
+  let losses = 0;
+  let draws = 0;
+  for (const g of games) {
+    if (g.result === '1/2-1/2') {
+      draws++;
+    } else if (g.won !== undefined) {
+      if (g.won) wins++;
+      else losses++;
+    } else if (g.mode === 'p2p') {
+      const isWhite = g.white === me;
+      const isBlack = g.black === me;
+      if (isWhite) {
+        if (g.result === '1-0') wins++;
+        else if (g.result === '0-1') losses++;
+      } else if (isBlack) {
+        if (g.result === '0-1') wins++;
+        else if (g.result === '1-0') losses++;
+      }
+    }
+  }
 
   return (
     <div className="page page--narrow">
@@ -121,7 +144,7 @@ function ArchiveList(): React.JSX.Element {
   if (games.length === 0) {
     return (
       <div className="card card--pad">
-        <p>まだ棋譜がありません。対戦を はじめましょう。</p>
+        <p>まだ棋譜がありません。対戦をはじめましょう。</p>
         <Link className="btn btn--primary" to="/play">
           対戦をはじめる
         </Link>

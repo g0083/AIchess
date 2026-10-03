@@ -154,7 +154,7 @@ export function AiSetupPage(): React.JSX.Element {
           />
         </Field>
         <Switch
-          label="指手を評価して、大失敗や軽失を指摘する"
+          label="指し手を評価して、悪手や疑問手を指摘する"
           checked={ai.blunderDetection}
           onChange={(v) => setAi({ blunderDetection: v })}
         />
@@ -234,7 +234,7 @@ function CustomBox(): React.JSX.Element {
         onChange={(v) => setAi({ custom: { ...ai.custom, blendWindow: v } })}
       />
       <Slider
-        label="Innovation（選択のばらつき）"
+        label="指し手の多様性（ランダム度）"
         value={ai.custom.temperature}
         min={0}
         max={200}

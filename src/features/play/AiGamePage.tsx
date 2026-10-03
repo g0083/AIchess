@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GameView } from '../../components/GameView';
 import { MoveList } from '../../components/MoveList';
-import { Dialog, Icon, ICONS } from '../../components/ui';
+import { Dialog } from '../../components/ui';
 import { useSession, type GradedMove, type MoveGrade } from '../../chess/session';
 import { clockById } from '../../chess/clock';
 import { useSettings, playerName } from '../../store/settings';
@@ -16,11 +16,11 @@ import { useArchive, buildPgn } from '../../store/archive';
 import type { Color } from '../../chess/rules';
 
 const GRADE_LABEL: Record<MoveGrade, string> = {
-  best: '最良手',
-  good: '良手',
-  inaccuracy: '不正確',
-  mistake: '軽失',
-  blunder: '大失敗',
+  best: '最善手',
+  good: '好手',
+  inaccuracy: '疑問手',
+  mistake: '悪手',
+  blunder: '大悪手',
 };
 
 export function AiGamePage(): React.JSX.Element {
@@ -64,6 +64,9 @@ export function AiGamePage(): React.JSX.Element {
     if (!finished) return;
     addGame();
     const won = finished.winner === mySide;
+    if (won) {
+      useProgress.getState().grantAchievement('first-win');
+    }
     useProgress.setState((s) => ({
       aiRating: Math.max(
         600,
@@ -130,8 +133,12 @@ export function AiGamePage(): React.JSX.Element {
         }
         actions={
           <div className="board-tools board-tools--wrap">
-            <button className="btn btn--sm" onClick={() => session.resign()} disabled={session.result.over}>
-              投了
+            <button
+              className="btn btn--sm"
+              onClick={() => session.undo()}
+              disabled={session.ply === 0}
+            >
+              1手戻す
             </button>
             <button
               className="btn btn--sm"
@@ -142,14 +149,10 @@ export function AiGamePage(): React.JSX.Element {
             </button>
             <button
               className="btn btn--sm"
-              onClick={() => session.undo()}
-              disabled={session.ply === 0}
+              onClick={() => session.resign()}
+              disabled={session.result.over}
             >
-              1手戻す
-            </button>
-            <button className="btn btn--sm" onClick={() => nav('/play/ai')}>
-              <Icon path={ICONS.close} size={15} />
-              やめる
+              投了
             </button>
           </div>
         }
@@ -166,7 +169,7 @@ export function AiGamePage(): React.JSX.Element {
             <button className="btn" onClick={() => nav('/play/ai')}>
               設定に戻る
             </button>
-            <button className="btn" onClick={() => nav('/meta/archive')}>
+            <button className="btn" onClick={() => nav('/meta', { state: { tab: 'archive' } })}>
               棋譜を見る
             </button>
             <button
@@ -197,7 +200,7 @@ export function AiGamePage(): React.JSX.Element {
           ) : review ? (
             bad.length > 0 ? (
               <div className="review-box">
-                <h4 className="card__title">見つかった失点手</h4>
+                <h4 className="card__title">見つかった悪手・疑問手</h4>
                 <ul className="list">
                   {bad.map((m) => (
                     <li key={m.ply} className="review-item">
@@ -208,7 +211,7 @@ export function AiGamePage(): React.JSX.Element {
                       >
                         {GRADE_LABEL[m.grade!]}
                       </span>
-                      {m.bestSan ? <span className="dim num">最良は {m.bestSan}</span> : null}
+                      {m.bestSan ? <span className="dim num">最善手は {m.bestSan}</span> : null}
                     </li>
                   ))}
                 </ul>
@@ -217,7 +220,7 @@ export function AiGamePage(): React.JSX.Element {
                 </p>
               </div>
             ) : (
-              <p className="ok-text">失点手はありませんでした。</p>
+              <p className="ok-text">大きなミスはありませんでした。</p>
             )
           ) : null}
         </div>

@@ -1,7 +1,7 @@
 {
   "name": "shogiya-chess",
   "version": "1.0.0",
-  "description": "将棋盤のように的对战チェス PWA — オフライン2人・AI・P2P・学習モード",
+  "description": "本格対局チェス PWA — オフライン2人・AI対局・P2P通信対戦・学習モード",
   "type": "module",
   "private": true,
   "scripts": {

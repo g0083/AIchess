@@ -126,10 +126,10 @@ export function summariseReview(moves: GradedMove[]): string {
   const blunders = moves.filter((m) => m.grade === 'blunder');
   const mistakes = moves.filter((m) => m.grade === 'mistake');
   if (blunders.length === 0 && mistakes.length === 0) {
-    return '失点手はありませんでした。';
+    return '大きなミスはありませんでした。';
   }
   const parts: string[] = [];
-  if (blunders.length > 0) parts.push(`大失敗${blunders.length}回`);
-  if (mistakes.length > 0) parts.push(`軽失${mistakes.length}回`);
+  if (blunders.length > 0) parts.push(`大悪手（ブランダー）${blunders.length}回`);
+  if (mistakes.length > 0) parts.push(`悪手（ミス）${mistakes.length}回`);
   return `${parts.join('、')}がありました。`;
 }

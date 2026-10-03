@@ -1,10 +1,19 @@
-import { Link } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useSettings, playerName, initialOf } from '../../store/settings';
 import { Icon, ICONS } from '../../components/ui';
 import { InstallCard } from '../../components/InstallCard';
 import { useProgress, solvedToday, dailyDone as isDailyDone } from '../../store/progress';
 
 export function HomePage(): React.JSX.Element {
+  const nav = useNavigate();
+  useEffect(() => {
+    const raw = new URLSearchParams(window.location.search).get('room');
+    if (raw) {
+      nav(`/play/online?room=${encodeURIComponent(raw)}`, { replace: true });
+    }
+  }, [nav]);
+
   const name = useSettings((s) => s.displayName);
   const progress = useProgress();
   const streak = progress.streak;
@@ -14,7 +23,7 @@ export function HomePage(): React.JSX.Element {
   const dailyDone = isDailyDone(progress);
 
   return (
-    <div className="page">
+    <div className="page page--wide">
       <div className="home-hero">
         <p className="eyebrow">{greeting()}</p>
         <h1 className="home-hero__title">
@@ -70,12 +79,14 @@ export function HomePage(): React.JSX.Element {
         <p className="dim" style={{ marginBottom: 'var(--sp-3)' }}>
           全世界のプレイヤーと同じ問題に挑戦します。
         </p>
-        <Link
-          className={dailyDone ? 'btn btn--block' : 'btn btn--primary btn--block'}
-          to="/learn/daily"
-        >
-          {dailyDone ? '今日は完了しました（見直す）' : '今日の問題を解く'}
-        </Link>
+        <div style={{ maxWidth: 360 }}>
+          <Link
+            className={dailyDone ? 'btn btn--block' : 'btn btn--primary btn--block'}
+            to="/learn/daily"
+          >
+            {dailyDone ? '今日は完了しました（見直す）' : '今日の問題を解く'}
+          </Link>
+        </div>
       </section>
     </div>
   );
@@ -132,8 +143,8 @@ function QuickCard({
 
 function greeting(): string {
   const h = new Date().getHours();
-  if (h < 5) return '夜遅く';
-  if (h < 11) return 'おはようございます';
-  if (h < 17) return 'こんにちは';
-  return 'こんばんは';
+  if (h < 5) return '夜遅くまでお疲れ様です、';
+  if (h < 11) return 'おはようございます、';
+  if (h < 17) return 'こんにちは、';
+  return 'こんばんは、';
 }

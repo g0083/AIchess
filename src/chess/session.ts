@@ -56,9 +56,13 @@ function sleep(ms: number): Promise<void> {
 
 export function useSession(opts: SessionOptions) {
   const chessRef = useRef(new Chess(opts.fen ?? START));
-  const clockRef = useRef<Clock | null>(opts.clock ? new Clock(opts.clock) : null);
+  const [clockInstance, setClockInstance] = useState<Clock | null>(() =>
+    opts.clock ? new Clock(opts.clock) : null,
+  );
+  const clockRef = useRef<Clock | null>(clockInstance);
+  clockRef.current = clockInstance;
   const engineRef = useRef<Engine | null>(null);
-  const agreedRef = useRef<{ draw?: boolean; resignedBy?: Color }>({});
+  const agreedRef = useRef<{ draw?: boolean; resignedBy?: Color; timeoutBy?: Color }>({});
   const busyRef = useRef(false);
 
   const [fen, setFen] = useState(chessRef.current.fen());
@@ -76,18 +80,18 @@ export function useSession(opts: SessionOptions) {
   const { onGameEnd } = opts;
 
   useEffect(() => {
-    const c = clockRef.current;
+    const c = clockInstance;
     if (!c) return;
     return c.subscribe(
       () => setClockTick((n) => n + 1),
       (side) => {
-        agreedRef.current = { resignedBy: side === 'w' ? 'b' : 'w' };
+        agreedRef.current = { timeoutBy: side };
         const r = positionResult(chessRef.current, agreedRef.current);
         setResult(r);
         onGameEnd?.(r, movesRef.current);
       },
     );
-  }, [onGameEnd]);
+  }, [clockInstance, onGameEnd]);
 
   const movesRef = useRef<GradedMove[]>([]);
   movesRef.current = moves;
@@ -124,12 +128,15 @@ export function useSession(opts: SessionOptions) {
   );
 
   const applyMove = useCallback(
-    (from: string, to: string): boolean => {
+    (from: string, to: string, promotion?: string): boolean => {
       if (locked) return false;
-      if (agreedRef.current.draw || agreedRef.current.resignedBy) return false;
+      if (agreedRef.current.draw || agreedRef.current.resignedBy || agreedRef.current.timeoutBy) return false;
       const c = chessRef.current;
-      const legal = c.moves({ verbose: true }).find((m) => m.from === from && m.to === to);
-      if (!legal) return false;
+      const moveCandidates = c.moves({ verbose: true }).filter((m) => m.from === from && m.to === to);
+      if (moveCandidates.length === 0) return false;
+      const legal =
+        (promotion ? moveCandidates.find((m) => m.promotion === promotion) : undefined) ??
+        moveCandidates[0];
       const mv = c.move({ from, to, promotion: legal.promotion });
       if (!mv) return false;
 
@@ -155,12 +162,15 @@ export function useSession(opts: SessionOptions) {
     [locked, onGameEnd],
   );
 
-  const play = useCallback((from: string, to: string) => applyMove(from, to), [applyMove]);
+  const play = useCallback(
+    (from: string, to: string, promotion?: string) => applyMove(from, to, promotion),
+    [applyMove],
+  );
 
   const playSan = useCallback(
     (san: string) => {
       const m = chessRef.current.moves({ verbose: true }).find((x) => x.san === san);
-      return m ? applyMove(m.from, m.to) : false;
+      return m ? applyMove(m.from, m.to, m.promotion) : false;
     },
     [applyMove],
   );
@@ -187,13 +197,18 @@ export function useSession(opts: SessionOptions) {
       setResult({ over: false });
       setEvalCp(null);
       setCandidates([]);
-      if (opts.clock) clockRef.current = new Clock(opts.clock);
+      if (opts.clock) {
+        clockRef.current?.dispose();
+        const newClock = new Clock(opts.clock);
+        clockRef.current = newClock;
+        setClockInstance(newClock);
+      }
     },
     [opts.clock],
   );
 
   const endByAgreement = useCallback(
-    (patch: { draw?: boolean; resignedBy?: Color }) => {
+    (patch: { draw?: boolean; resignedBy?: Color; timeoutBy?: Color }) => {
       agreedRef.current = patch;
       const r = positionResult(chessRef.current, patch);
       setResult(r);
@@ -283,7 +298,11 @@ export function useSession(opts: SessionOptions) {
       // Keep the opponent feeling human rather than instantaneous.
       const wait = Math.max(0, minimumThinkMs(ai) - (performance.now() - t0));
       if (wait > 0) await sleep(wait);
-      applyMove(uci.slice(0, 2), uci.slice(2, 4));
+      applyMove(
+        uci.slice(0, 2),
+        uci.slice(2, 4),
+        uci.length > 4 ? uci.slice(4, 5) : undefined,
+      );
     } finally {
       busyRef.current = false;
       setEngineThinking(false);

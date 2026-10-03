@@ -111,7 +111,7 @@ export class Rules {
    * `agreed` is set by the caller for draw offers and resignations, which
    * chess.js knows nothing about.
    */
-  result(agreed?: { draw?: boolean; resignedBy?: Color }): ResultInfo {
+  result(agreed?: { draw?: boolean; resignedBy?: Color; timeoutBy?: Color }): ResultInfo {
     return positionResult(this.chess, agreed);
   }
 
@@ -225,8 +225,11 @@ export const PIECE_JA: Record<PieceSymbol, string> = {
  */
 export function positionResult(
   chess: Chess,
-  agreed?: { draw?: boolean; resignedBy?: Color },
+  agreed?: { draw?: boolean; resignedBy?: Color; timeoutBy?: Color },
 ): ResultInfo {
+  if (agreed?.timeoutBy) {
+    return { over: true, reason: '時間切れ', winner: other(agreed.timeoutBy) };
+  }
   if (agreed?.resignedBy) {
     return { over: true, reason: '投了', winner: other(agreed.resignedBy) };
   }

@@ -114,7 +114,7 @@ export function LessonPlayer({ lesson }: { lesson: Lesson }): React.JSX.Element 
           <div className="card card--pad" style={{ marginBottom: 'var(--sp-3)' }}>
             <h2 className="card__title">練習</h2>
             <p>{task.prompt}</p>
-            {taskWrong ? <p className="scanner__error">もう一度考えてみましょう。</p> : null}
+            {taskWrong ? <p className="error-text">もう一度考えてみましょう。</p> : null}
             {taskDone ? (
               <div className="ok-text">
                 <p>{task.explain}</p>
@@ -198,7 +198,7 @@ export function LessonPlayer({ lesson }: { lesson: Lesson }): React.JSX.Element 
                   </button>
                   {qPicked !== null && (picked || right) ? (
                     <p
-                      className={right ? 'ok-text' : 'scanner__error'}
+                      className={right ? 'ok-text' : 'error-text'}
                       style={{ marginTop: 4, marginBottom: 0 }}
                     >
                       {question.explain}
@@ -230,8 +230,8 @@ export function LessonPlayer({ lesson }: { lesson: Lesson }): React.JSX.Element 
 
       {phase === 'done' ? (
         <section className="card card--pad">
-          <h2 className="card__title">おめでとう</h2>
-          <p>このレッスンを完了しました。</p>
+          <h2 className="card__title">レッスン完了！</h2>
+          <p>おめでとうございます。このレッスンを完了しました。</p>
           <div className="board-tools">
             <button className="btn btn--primary" onClick={() => nav('/learn')}>
               クラス一覧へ

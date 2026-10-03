@@ -7,6 +7,7 @@
  * landscape, and an ultrawide monitor. The side panels scroll; the board does not.
  */
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Chess, type Square } from 'chess.js';
 import { Chessground } from '@lichess-org/chessground';
 import type { Api as ChessgroundApi } from '@lichess-org/chessground/api';
 import type { Key as CgKey } from '@lichess-org/chessground/types';
@@ -39,8 +40,9 @@ export function toKey(s: string): CgKey {
 
 export interface ShapeHint {
   from: CgKey;
-  to: CgKey;
-  kind: 'arrow' | 'square';
+  to?: CgKey;
+  kind?: 'arrow' | 'square';
+  brush?: string;
 }
 
 export interface BoardProps {
@@ -57,7 +59,7 @@ export interface BoardProps {
   viewOnly?: boolean;
   /** Highlight this side's king in red when it is in check. */
   check?: Color | null;
-  onMove?: (from: CgKey, to: CgKey) => void;
+  onMove?: (from: CgKey, to: CgKey, promotion?: string) => void;
   onSelect?: (key: CgKey) => void;
   onDrawChange?: (shapes: ShapeHint[]) => void;
   animationDuration?: number;
@@ -110,6 +112,9 @@ export function Board(props: BoardProps): React.JSX.Element {
   const [size, setSize] = useState(360);
   const sizeRef = useRef(size);
   const theme = useSettings((s) => s.theme);
+  const [pendingPromo, setPendingPromo] = useState<{ from: CgKey; to: CgKey; color: Color } | null>(null);
+  const fenRef = useRef(fen);
+  fenRef.current = fen;
 
   // Re-emit the artwork when the theme changes; the colours are baked into
   // the SVG data URIs.
@@ -195,6 +200,19 @@ export function Board(props: BoardProps): React.JSX.Element {
           after: (from, to) => {
             // Clear immediately so a rejected move snaps back.
             api.set({ movable: { dests: new Map() } });
+            try {
+              const c = new Chess(fenRef.current);
+              const p = c.get(from as Square);
+              const isPromo =
+                p?.type === 'p' &&
+                ((p.color === 'w' && to[1] === '8') || (p.color === 'b' && to[1] === '1'));
+              if (isPromo) {
+                setPendingPromo({ from, to, color: p.color });
+                return;
+              }
+            } catch {
+              /* ignore */
+            }
             moveCb.current?.(from, to);
           },
         },
@@ -245,8 +263,8 @@ export function Board(props: BoardProps): React.JSX.Element {
     () =>
       (shapes ?? []).map((s) => ({
         orig: s.from,
-        dest: s.to,
-        brush: s.kind === 'square' ? ('puck' as const) : ('arrow' as const),
+        dest: s.to && s.to !== s.from ? s.to : undefined,
+        brush: s.brush ?? (s.kind === 'square' ? 'red' : 'green'),
       })),
     [shapes],
   );
@@ -269,6 +287,45 @@ export function Board(props: BoardProps): React.JSX.Element {
         aria-label={ariaLabel}
       >
         <div className="cg-wrap" ref={cgRef} style={{ width: size, height: size }} />
+        {pendingPromo ? (
+          <div className="promo-overlay">
+            <div className="promo-dialog">
+              <p className="promo-dialog__title">成る駒を選択</p>
+              <div className="promo-dialog__pieces">
+                {[
+                  { role: 'q', label: 'クイーン' },
+                  { role: 'n', label: 'ナイト' },
+                  { role: 'r', label: 'ルーク' },
+                  { role: 'b', label: 'ビショップ' },
+                ].map((item) => (
+                  <button
+                    key={item.role}
+                    type="button"
+                    className="btn btn--sm promo-btn"
+                    onClick={() => {
+                      const promo = pendingPromo;
+                      setPendingPromo(null);
+                      moveCb.current?.(promo.from, promo.to, item.role);
+                    }}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                className="btn btn--sm btn--ghost"
+                style={{ marginTop: 6 }}
+                onClick={() => {
+                  setPendingPromo(null);
+                  apiRef.current?.set({ fen });
+                }}
+              >
+                キャンセル
+              </button>
+            </div>
+          </div>
+        ) : null}
       </div>
     </div>
   );

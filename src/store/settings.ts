@@ -29,6 +29,12 @@ export interface Settings {
   autoFlip: boolean;
   /** Confirmation before resigning. */
   confirmResign: boolean;
+  /** Show AI coach explanations when requesting a hint. */
+  coachExplanation: boolean;
+  /** Warn about opponent threats and mate dangers. */
+  showThreats: boolean;
+  /** Highlight undefended friendly pieces under attack. */
+  highlightHanging: boolean;
   displayName: string;
   clockPresetId: string;
   ai: AiConfig;
@@ -60,6 +66,9 @@ const DEFAULTS: Settings = {
   sound: false,
   autoFlip: true,
   confirmResign: true,
+  coachExplanation: true,
+  showThreats: true,
+  highlightHanging: true,
   displayName: '',
   clockPresetId: 'sudoku-10-5',
   ai: DEFAULT_AI,

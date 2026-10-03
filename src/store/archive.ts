@@ -102,7 +102,7 @@ export function buildPgn(opts: {
     `[Site "${opts.site ?? '将棋盤チェス'}"]`,
     `[Date "${date}"]`,
     opts.timeControl ? `[TimeControl "${opts.timeControl}"]` : '',
-    opts.fen ? `[FEN "${opts.fen}"]` : '[SetUp "1"]',
+    ...(opts.fen ? ['[SetUp "1"]', `[FEN "${opts.fen}"]`] : []),
     `[White "${opts.white}"]`,
     `[Black "${opts.black}"]`,
     `[Result "${opts.result}"]`,
