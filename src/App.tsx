@@ -35,7 +35,6 @@ const NAV = [
 
 export function App(): React.JSX.Element {
   const theme = useSettings((s) => s.theme);
-  const location = useLocation();
   const [configReady, setConfigReady] = useState(false);
 
   // The public link comes from app-config.json on the server. It must be
@@ -58,7 +57,24 @@ export function App(): React.JSX.Element {
   return (
     <ToastProvider>
       <HashRouter>
-        <div className="app">
+        <Shell configReady={configReady} />
+      </HashRouter>
+    </ToastProvider>
+  );
+}
+
+/**
+ * Everything that needs router context lives in here.
+ *
+ * It must be a child of <HashRouter>: useLocation() throws when it is called
+ * by a component that the Router itself renders, because that component is
+ * evaluated outside the router's context.
+ */
+function Shell({ configReady }: { configReady: boolean }): React.JSX.Element {
+  const location = useLocation();
+
+  return (
+    <div className="app">
           <header className="app__header">
             <Link to="/" className="app__brand">
               <span className="app__brand-mark" aria-hidden="true">
@@ -97,8 +113,6 @@ export function App(): React.JSX.Element {
 
           <BottomNav pathname={location.pathname} />
         </div>
-      </HashRouter>
-    </ToastProvider>
   );
 }
 
