@@ -6,7 +6,7 @@
   "private": true,
   "scripts": {
     "dev": "npm run engine:copy && vite",
-    "build": "npm run engine:copy && tsc --noEmit && vite build",
+    "build": "npm run engine:copy && npm run icons && tsc --noEmit && vite build",
     "preview": "vite preview --host",
     "test": "vitest run",
     "test:watch": "vitest",

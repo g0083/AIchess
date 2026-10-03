@@ -117,9 +117,23 @@ async function verify() {
     bad++;
   }
 
+  // Every icon the manifest declares must actually exist, or the install
+  // prompt breaks. These are generated, so a missing step is easy to miss.
+  const declared = [
+    ...(manifest.icons ?? []).map((i) => i.src),
+    ...(manifest.shortcuts ?? []).flatMap((s) => []),
+  ];
+  for (const src of new Set(declared)) {
+    const res = await fetch(`${origin}/${src.replace(/^\.\//, '')}`);
+    if (!res.ok) {
+      console.log(`  ICON MISSING ${src} -> ${res.status}`);
+      bad++;
+    }
+  }
+
   console.log(
     bad === 0
-      ? `[serve] OK - all ${new Set(checks).size} assets resolve under ${prefix}`
+      ? `[serve] OK - all ${new Set(checks).size} assets and ${new Set(declared).size} icons resolve under ${prefix}`
       : `[serve] ${bad} problem(s) under ${prefix}`,
   );
   server.close();
