@@ -49,22 +49,21 @@ jobs:
       # integration" when Pages has never been switched on. Check the repo
       # metadata instead: GET /repos/{repo}/pages returns 404 until the first
       # successful deploy, so it would always block its own first run.
+      # gh is preinstalled on the runner and already authenticated.
       - name: Check that GitHub Pages is enabled
         env:
           GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
         run: |
-          has_pages=$(curl -s -H 'Accept: application/vnd.github+json' \
-            -H "Authorization: Bearer ${GH_TOKEN}" \
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}" |
-            grep -o '"has_pages":[a-z]*' | cut -d: -f2)
-          if [ "$has_pages" != "true" ]; then
-            echo "::error::GitHub Pages is not enabled for this repository."
-            echo "Enable it once at:"
-            echo "  https://github.com/${GITHUB_REPOSITORY}/settings/pages"
-            echo "then choose Source = GitHub Actions, and re-run this workflow."
+          set -euo pipefail
+          if [ "$(gh api "repos/${REPO}" --jq '.has_pages')" = "true" ]; then
+            echo "Pages is enabled."
+          else
+            echo "::error::GitHub Pages is not enabled for ${REPO}."
+            echo "Enable it once at https://github.com/${REPO}/settings/pages"
+            echo "(Build and deployment -> Source -> GitHub Actions), then re-run."
             exit 1
           fi
-          echo "Pages is enabled."
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
