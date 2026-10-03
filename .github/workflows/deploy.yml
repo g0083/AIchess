@@ -1,0 +1,61 @@
+name: Deploy to GitHub Pages
+
+# Publishes the built app to https://g0083.github.io/AIChess/
+# Cloudflare Pages can use the same `npm run build`; nothing here is
+# GitHub-specific apart from this file.
+
+on:
+  push:
+    branches: [master, main]
+  # Lets you publish from the Actions tab without pushing a commit.
+  workflow_dispatch:
+
+# Only one deployment at a time; queued runs are cancelled.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      # The content gate is part of the build: a broken puzzle or a corrupted
+      # Japanese string must never reach users.
+      - name: Verify content and puzzles
+        run: npm run verify
+
+      - name: Build
+        run: npm run build
+
+      - name: Check sub-path hosting
+        run: node scripts/serve-subpath.mjs /AIChess 4174
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

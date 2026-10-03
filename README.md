@@ -102,14 +102,56 @@ npm install
 npm run dev          # 開発サーバー（エンジンを public/ へ配置してから起動）
 npm run build        # 型チェック + 本番ビルド
 npm run preview      # dist/ を配信して PWA を実機確認
+npm run verify       # コンテンツ検証 + パズル検証 + ユニットテスト
 ```
 
-### 公開先へ出すとき
+### サブパス配信の確認（GitHub Pages 向け）
 
-1. `npm run build`
-2. `dist/` を任意の静的ホストへ配置（`base: './'` なのでサブディレクトリでも動作）
-3. `dist/app-config.json` の `publicOrigin` を公開URLに書き換える
-4. HTTPS で配信する（Service Worker とカメラの要件）
+GitHub Pages はリポジトリを `/AIChess/` に配置します。ルート配信を前提にした
+不具合を出さないよう、実際のビルド成果物をその構成で配信して検証します。
+
+```bash
+npm run build
+node scripts/serve-subpath.mjs /AIChess 4174
+# -> [serve] OK - all 15 assets resolve under /AIChess
+```
+
+---
+
+## 公開
+
+### GitHub Pages
+
+`.github/workflows/deploy.yml` が `master` への push で自動デプロイします。
+リポジトリ設定で **Settings → Pages → Source: GitHub Actions** を選んでください。
+
+- 公開URL: `https://g0083.github.io/AIChess/`
+- 初期化: `git remote add origin https://github.com/g0083/AIChess.git`
+- 反映: `git push -u origin master`
+
+ワークフローの中で `npm run verify` とサブパス検証が走ります。
+壊れたパズルや壊れた日本語が本番に届くことはありません。
+
+設定を変えたい場合（公開ドメインやサブパスの変更など）は、
+`public/app-config.json` の `publicOrigin` を書き換えて push するだけです。
+再ビルドは不要です。
+
+### Cloudflare Pages（フォールバック）
+
+- **Build command**: `npm run build`
+- **Build output directory**: `dist`
+- **Environment variables**: `NODE_VERSION=22`
+
+`base` は `'./'`（相対パス）なので、ルート配信でもサブパス配信でも
+どちらでもそのまま動作します。 Pages で動かなかった場合に
+ビルド設定を変えずに切り替えられます。
+
+### 注意事項
+
+- **HTTPS 必須** — Service Worker とカメラ（QR読み取り）の要件です。
+  GitHub Pages も Cloudflare Pages も既定で HTTPS です。
+- `dist/` に engines、`public/` に icons は生成物のため `.gitignore` 済みです。
+  CI が `npm install` 後に自動生成します。
 
 ---
 

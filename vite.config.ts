@@ -12,7 +12,9 @@ export default defineConfig({
       injectRegister: null,
       includeAssets: ['icons/favicon.svg', 'icons/apple-touch-icon.png', 'app-config.json'],
       manifest: {
-        id: '/',
+        // Must stay relative: on a sub-path host an absolute "/"-based id
+        // would resolve to the site root instead of the app.
+        id: './',
         name: '将棋盤チェス',
         short_name: '将棋盤チェス',
         description:

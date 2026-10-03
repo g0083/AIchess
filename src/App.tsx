@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   HashRouter,
   Routes,
@@ -11,6 +11,7 @@ import {
 import { useSettings } from './store/settings';
 import { Icon, ICONS } from './components/ui';
 import { ToastProvider } from './components/Toast';
+import { loadSiteConfig } from './config/site';
 import { t } from './i18n/ja';
 import { HomePage } from './features/home/HomePage';
 import { AiSetupPage } from './features/play/AiSetupPage';
@@ -35,6 +36,20 @@ const NAV = [
 export function App(): React.JSX.Element {
   const theme = useSettings((s) => s.theme);
   const location = useLocation();
+  const [configReady, setConfigReady] = useState(false);
+
+  // The public link comes from app-config.json on the server. It must be
+  // loaded before the P2P lobby renders, otherwise the QR would be built from
+  // location.origin, which on a sub-path host is the domain root.
+  useEffect(() => {
+    let alive = true;
+    void loadSiteConfig().then(() => {
+      if (alive) setConfigReady(true);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -56,22 +71,28 @@ export function App(): React.JSX.Element {
           </header>
 
           <main className="app__main">
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/play" element={<ModeChooser />} />
-              <Route path="/play/ai" element={<AiSetupPage />} />
-              <Route path="/play/ai/game" element={<AiGamePage />} />
-              <Route path="/play/local" element={<LocalSetupPage />} />
-              <Route path="/play/local/game" element={<LocalGamePage />} />
-              <Route path="/play/online" element={<OnlineLobbyPage />} />
-              <Route path="/play/online/host" element={<P2PGamePage role="host" />} />
-              <Route path="/play/online/join" element={<P2PGamePage role="guest" />} />
-              <Route path="/play/analysis" element={<AnalysisPage />} />
-              <Route path="/learn/*" element={<LearnHomePage />} />
-              <Route path="/meta" element={<MetaPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+            {configReady ? (
+              <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/play" element={<ModeChooser />} />
+                <Route path="/play/ai" element={<AiSetupPage />} />
+                <Route path="/play/ai/game" element={<AiGamePage />} />
+                <Route path="/play/local" element={<LocalSetupPage />} />
+                <Route path="/play/local/game" element={<LocalGamePage />} />
+                <Route path="/play/online" element={<OnlineLobbyPage />} />
+                <Route path="/play/online/host" element={<P2PGamePage role="host" />} />
+                <Route path="/play/online/join" element={<P2PGamePage role="guest" />} />
+                <Route path="/play/analysis" element={<AnalysisPage />} />
+                <Route path="/learn/*" element={<LearnHomePage />} />
+                <Route path="/meta" element={<MetaPage />} />
+                <Route path="/settings" element={<SettingsPage />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            ) : (
+              <div className="page">
+                <p className="dim">{t('app.loading')}</p>
+              </div>
+            )}
           </main>
 
           <BottomNav pathname={location.pathname} />

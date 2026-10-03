@@ -24,6 +24,35 @@ declare global {
   }
 }
 
+/**
+ * Loads app-config.json into window.__APP_CONFIG__.
+ *
+ * This is what makes the public link editable on the server without a rebuild.
+ * It must be awaited before the lobby renders, otherwise the QR would fall
+ * back to location.origin - which on a sub-path host such as GitHub Pages is
+ * the domain root, not the app.
+ *
+ * The URL is resolved against BASE_URL so it works from any sub-path.
+ */
+let loadPromise: Promise<void> | null = null;
+
+export function loadSiteConfig(): Promise<void> {
+  if (loadPromise) return loadPromise;
+  const base = import.meta.env.BASE_URL || './';
+  const url = `${base}app-config.json`.replace(/([^:]\/)\/+/g, '$1');
+  loadPromise = fetch(url, { cache: 'no-cache' })
+    .then((r) => (r.ok ? r.json() : null))
+    .then((json: AppConfig | null) => {
+      if (json && typeof json.publicOrigin === 'string') {
+        window.__APP_CONFIG__ = { ...json };
+      }
+    })
+    .catch(() => {
+      /* Offline or missing file: location.origin remains the fallback. */
+    });
+  return loadPromise;
+}
+
 /** Trailing slashes would produce a double slash in every join URL. */
 function normalizeOrigin(v: string): string {
   const s = v.trim();

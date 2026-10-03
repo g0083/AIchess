@@ -134,7 +134,9 @@ describe('room codes', () => {
 
 describe('join links', () => {
   it('parses a room code out of a full URL', () => {
-    expect(parseRoomInput('https://example.com/?room=ABCD2345&join=1#p2p')).toBe('ABCD2345');
+    expect(
+      parseRoomInput('https://g0083.github.io/AIChess/?room=ABCD2345&join=1#p2p'),
+    ).toBe('ABCD2345');
   });
 
   it('parses a bare ROOM- code', () => {
@@ -145,6 +147,39 @@ describe('join links', () => {
     expect(parseRoomInput('')).toBeNull();
   });
 
+  it('does not mistake a URL scheme for a room code', () => {
+    expect(parseRoomInput('https://example.com/')).toBeNull();
+    expect(parseRoomInput('HTTPS')).toBeNull();
+  });
+
+  it('keeps the deployment sub-path in the join URL', () => {
+    // GitHub Pages serves the app at /AIChess/. Losing the sub-path would
+    // make every QR code point at the domain root instead of the app.
+    globalThis.window = {
+      __APP_CONFIG__: { publicOrigin: 'https://g0083.github.io/AIChess' },
+    } as never;
+    try {
+      expect(joinUrl('ABCD2345')).toBe(
+        'https://g0083.github.io/AIChess/?room=ABCD2345&join=1#p2p',
+      );
+    } finally {
+      delete (globalThis as { window?: unknown }).window;
+    }
+  });
+
+  it('never emits a path that escapes the deployment prefix', () => {
+    globalThis.window = {
+      __APP_CONFIG__: { publicOrigin: 'https://g0083.github.io/AIChess/' },
+    } as never;
+    try {
+      // A trailing slash in the config must not produce a double slash.
+      const url = joinUrl('ABCD2345');
+      expect(url).toContain('/AIChess/?room=');
+      expect(url).not.toContain('//?room=');
+    } finally {
+      delete (globalThis as { window?: unknown }).window;
+    }
+  });
   it('builds a URL with the query before the hash', () => {
     const url = joinUrl('ABCD2345');
     expect(url).toContain('?room=ABCD2345');

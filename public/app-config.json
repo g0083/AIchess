@@ -1,4 +1,4 @@
 {
   "_comment": "公開リンクの設定。ビルドし直さずに公開サーバーのこのファイルを書き換えるだけで反映されます。空文字のときはブラウザの現在のoriginを使います。",
-  "publicOrigin": ""
+  "publicOrigin": "https://g0083.github.io/AIChess"
 }
